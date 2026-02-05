@@ -13,6 +13,32 @@ A production-ready PowerShell module template built with the [Sampler](https://g
 - **Thread-Safe Logging** - Enterprise-grade `Write-Log` with rotation, redaction, and PSStyle output
 - **Quick Setup** - Interactive `Initialize-Template.ps1` script for rapid customization
 
+## 📋 Recent Updates
+
+### Private Functions (Enterprise-Grade Reference Implementations)
+
+**Test-PreflightCheck.ps1** (330 lines, 9/11 enterprise features)
+- ✅ System prerequisite validation for Active Directory Domain Services
+- ✅ Guardrails: Elevation check, Windows Server SKU validation
+- ✅ Enhanced error messages with available features/drives
+- ✅ Smart drive selection with logged rationale
+- ✅ Capacity metrics reporting
+
+**Invoke-ResourceModule.ps1** (349 lines, 11/11 enterprise features)
+- ✅ Idempotent PowerShell module installer from PSGallery
+- ✅ SupportsShouldProcess with WhatIf/Confirm
+- ✅ PSGallery trust state management (saves/restores)
+- ✅ Scope-aware installation (CurrentUser/AllUsers)
+- ✅ Post-installation verification
+- ✅ Module name validation for security
+- ✅ Enhanced error messages with similar modules
+
+These functions demonstrate production-ready patterns for:
+- State-changing operations with verification
+- Comprehensive validation and guardrails
+- Actionable error messages
+- Metrics and performance tracking
+
 ## 🚀 Quick Start
 
 ### 1. Create Your Module from Template
@@ -93,6 +119,8 @@ Invoke-ADDSDomainController/
 │   │   └── Get-Greeting.ps1              # Example public function
 │   └── Private/                          # Internal helpers (one per file)
 │       ├── Format-GreetingMessage.ps1    # Example private function
+│       ├── Invoke-ResourceModule.ps1     # Module installer (349 lines, 11/11 enterprise)
+│       ├── Test-PreflightCheck.ps1       # System validation (330 lines, 9/11 enterprise)
 │       └── Write-Log.ps1                 # Enterprise logging (502 lines)
 ├── tests/
 │   ├── tests.instructions.md             # Testing standards
@@ -103,6 +131,8 @@ Invoke-ADDSDomainController/
 │       │   └── Get-Greeting.tests.ps1    # Unit tests for Get-Greeting
 │       └── Private/
 │           ├── Format-GreetingMessage.tests.ps1
+│           ├── Invoke-ResourceModule.tests.ps1  # Tests for module installer
+│           ├── Test-PreflightCheck.tests.ps1    # Tests for system validation
 │           └── Write-Log.tests.ps1
 ├── .gitattributes
 ├── .gitignore
@@ -123,6 +153,8 @@ Invoke-ADDSDomainController/
 
 ## 🎯 Enterprise Standards Included
 
+This template demonstrates enterprise-grade PowerShell development with production-ready private functions.
+
 ### Core Standards (Must Have)
 - ✅ **Guardrails Integration** - Elevation checks, environment validation
 - ✅ **Comprehensive Validation** - Input validation, dependency checks, health status
@@ -142,6 +174,22 @@ Invoke-ADDSDomainController/
 - ✅ **Helper Functions** - Info, removal, status check patterns
 
 **Target: 11/11 features for production modules**
+
+### Included Enterprise Functions
+
+| Function | Type | Features | Lines | Purpose |
+|----------|------|----------|-------|---------|
+| `Test-PreflightCheck` | Private | 9/11 | 330 | System prerequisite validation for AD DS |
+| `Invoke-ResourceModule` | Private | 11/11 | 349 | Idempotent module installer with verification |
+| `Write-Log` | Private | N/A | 502 | Thread-safe logging with rotation & redaction |
+
+These functions serve as **reference implementations** demonstrating enterprise patterns:
+- Security validation (elevation, input sanitization)
+- Comprehensive error handling with actionable guidance
+- Post-operation verification
+- Detailed metrics and logging
+- PSGallery trust state management
+- Scope-aware module installation
 
 ## 🔧 CI/CD Setup
 
@@ -186,6 +234,54 @@ Demonstrates:
 - Enterprise logging with `Write-Log`
 - Idempotency pattern
 - PSStyle-safe error messages
+
+### Test-PreflightCheck (Private Function)
+
+**Enterprise validation function (9/11 features)** - Validates system prerequisites for AD DS installation:
+- **Guardrails:** Elevation check, Windows Server SKU validation, platform validation
+- **Comprehensive validation:** Windows Features, filesystem paths, disk capacity
+- **Verification:** Confirms all checks completed with metrics
+- **PassThru support:** Returns detailed validation object
+- **Enhanced errors:** Shows available features/drives with actionable guidance
+- **Smart behavior:** Auto-selects drive with most free space when no paths specified
+- **Metrics reporting:** Total/passed/failed checks, success rate
+
+```powershell
+# Basic validation
+Test-PreflightCheck
+
+# Custom validation with PassThru
+$result = Test-PreflightCheck -RequiredModule @("AD-Domain-Services", "DNS") `
+                               -RequiredPaths @("C:\NTDS", "D:\Logs") `
+                               -MinDiskSpaceGB 10 -PassThru
+```
+
+### Invoke-ResourceModule (Private Function)
+
+**Enterprise module installer (11/11 features)** - Installs PowerShell modules from PSGallery:
+- **Guardrails:** Elevation check for AllUsers scope
+- **Comprehensive validation:** Module name validation (security), repository checks
+- **SupportsShouldProcess:** WhatIf/Confirm support
+- **Full idempotency:** Checks existing modules by scope, skips already-installed
+- **Verification:** Confirms installation succeeded in correct scope
+- **PassThru support:** Returns detailed installation results
+- **Force parameter:** Suppresses confirmations for automation
+- **Enhanced errors:** Shows similar modules in PSGallery with tips
+- **Smart behavior:** Auto-detects elevation, defaults to safe CurrentUser scope
+- **Metrics reporting:** Installed/skipped/failed counts, elapsed time, success rate
+- **PSGallery trust management:** Saves and restores original trust state
+
+```powershell
+# Install to CurrentUser (default, no elevation required)
+Invoke-ResourceModule -Name @("Pester", "PSScriptAnalyzer")
+
+# Install to AllUsers (requires elevation)
+Invoke-ResourceModule -Name @("Az.Accounts", "Az.Resources") -Scope AllUsers
+
+# Automation with detailed results
+$results = Invoke-ResourceModule -Name @("Module1", "Module2") -Force -PassThru
+$results | Where-Object { $_.Action -eq 'Failed' }
+```
 
 ### Write-Log (Private Function)
 
