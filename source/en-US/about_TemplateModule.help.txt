@@ -1,0 +1,48 @@
+TOPIC
+    about_TemplateModule
+
+SHORT DESCRIPTION
+    {{MODULE_DESCRIPTION}}
+
+LONG DESCRIPTION
+    The TemplateModule module provides PowerShell automation capabilities
+    following enterprise-grade standards including:
+
+    - Advanced function patterns with CmdletBinding and ShouldProcess
+    - Comprehensive input validation
+    - Enterprise logging with Write-Log (thread-safe, rotation, redaction)
+    - Idempotent operations (safe re-runs)
+    - Full Pester v5+ test coverage
+
+COMMANDS
+    Get-Greeting
+        Example public function demonstrating enterprise patterns.
+        Generates a personalized greeting message with logging and
+        ShouldProcess support.
+
+EXAMPLES
+    Example 1: Basic usage
+        Get-Greeting -Name "World"
+
+    Example 2: Get rich object output
+        Get-Greeting -Name "World" -PassThru
+
+    Example 3: Preview changes without executing
+        Get-Greeting -Name "World" -WhatIf
+
+NOTES
+    This module requires PowerShell 7.0 or later.
+
+    All state-changing operations support -WhatIf and -Confirm via
+    SupportsShouldProcess.
+
+    Logging is handled by Write-Log which provides:
+    - Thread-safe file logging with mutex
+    - Automatic log rotation (10MB threshold)
+    - Sensitive data redaction
+    - ANSI color console output
+
+SEE ALSO
+    Get-Greeting
+    Write-Log
+    Format-GreetingMessage
