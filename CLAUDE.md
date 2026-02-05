@@ -17,10 +17,10 @@ After cloning, run `Initialize-Template.ps1` to customize the template with your
 ## Module Structure (Sampler Layout)
 
 ```
-{{MODULE_NAME}}/
+Invoke-ADDSDomainController/
 ├── source/
-│   ├── {{MODULE_NAME}}.psd1      # Module manifest
-│   ├── {{MODULE_NAME}}.psm1      # Dot-sources Public/ and Private/
+│   ├── Invoke-ADDSDomainController.psd1      # Module manifest
+│   ├── Invoke-ADDSDomainController.psm1      # Dot-sources Public/ and Private/
 │   ├── Public/                   # Exported functions (one per file)
 │   ├── Private/                  # Internal helper functions (one per file)
 │   ├── Classes/                  # PowerShell classes (numbered for load order)

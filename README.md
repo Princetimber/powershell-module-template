@@ -35,7 +35,7 @@ The init script will prompt you for:
 
 The script will:
 - Replace all `{{PLACEHOLDER}}` tokens in file content
-- Rename `TemplateModule.*` files to your module name
+- Rename `Invoke-ADDSDomainController.*` files to your module name
 - Update CHANGELOG.md with your module name
 - Remove itself after completion
 
@@ -70,7 +70,7 @@ Follow the patterns in `Get-Greeting.ps1` and `Get-Greeting.tests.ps1` for enter
 ## 📁 Directory Structure
 
 ```
-{{MODULE_NAME}}/
+Invoke-ADDSDomainController/
 ├── .github/
 │   ├── copilot-instructions.md           # GitHub Copilot instructions
 │   ├── instructions/                     # Path-scoped AI agent instructions
@@ -85,10 +85,10 @@ Follow the patterns in `Get-Greeting.ps1` and `Get-Greeting.tests.ps1` for enter
 ├── .vscode/
 │   └── tasks.json                        # VS Code build/test tasks
 ├── source/
-│   ├── {{MODULE_NAME}}.psd1              # Module manifest
-│   ├── {{MODULE_NAME}}.psm1              # Root module (dot-sources functions)
+│   ├── Invoke-ADDSDomainController.psd1              # Module manifest
+│   ├── Invoke-ADDSDomainController.psm1              # Root module (dot-sources functions)
 │   ├── en-US/
-│   │   └── about_{{MODULE_NAME}}.help.txt # About help file
+│   │   └── about_Invoke-ADDSDomainController.help.txt # About help file
 │   ├── Public/                           # Exported functions (one per file)
 │   │   └── Get-Greeting.ps1              # Example public function
 │   └── Private/                          # Internal helpers (one per file)
@@ -249,13 +249,13 @@ The following placeholders are used throughout the template:
 
 | Placeholder | Description | Example |
 |-------------|-------------|---------|
-| `{{MODULE_NAME}}` | Module name | `Invoke-MyModule` |
-| `{{MODULE_DESCRIPTION}}` | Module description | `Storage management for Windows Server` |
-| `{{AUTHOR}}` | Author name | `John Doe` |
-| `{{COMPANY}}` | Company/organization | `Contoso Ltd` |
-| `{{MODULE_GUID}}` | Unique module GUID | `12345678-1234-1234-1234-123456789012` |
+| `Invoke-ADDSDomainController` | Module name | `Invoke-MyModule` |
+| `This module will orchestrate the installation and configuration of a root domain controller in a forest programmatically using carefully curated PowerShell commands. It would simplify this process as much as possible and as safely as possible.` | Module description | `Storage management for Windows Server` |
+| `Olamide Olaleye` | Author name | `John Doe` |
+| `Fountview Enterprise Solutions` | Company/organization | `Contoso Ltd` |
+| `2dd186f4-06e5-48fb-bc6e-be5c5eb1a84d` | Unique module GUID | `12345678-1234-1234-1234-123456789012` |
 
-Additionally, files named `TemplateModule.*` will be renamed to your actual module name.
+Additionally, files named `Invoke-ADDSDomainController.*` will be renamed to your actual module name.
 
 ## 📄 License
 

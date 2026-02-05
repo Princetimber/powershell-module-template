@@ -137,7 +137,7 @@ function Get-Greeting {
 
             if ($PassThru) {
                 return [PSCustomObject]@{
-                    PSTypeName = 'TemplateModule.GreetingResult'
+                    PSTypeName = 'Invoke-ADDSDomainController.GreetingResult'
                     Name       = $Name
                     Style      = $Style
                     Message    = $greeting

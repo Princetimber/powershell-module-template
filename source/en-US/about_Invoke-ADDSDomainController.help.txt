@@ -1,11 +1,11 @@
 TOPIC
-    about_TemplateModule
+    about_Invoke-ADDSDomainController
 
 SHORT DESCRIPTION
-    {{MODULE_DESCRIPTION}}
+    This module will orchestrate the installation and configuration of a root domain controller in a forest programmatically using carefully curated PowerShell commands. It would simplify this process as much as possible and as safely as possible.
 
 LONG DESCRIPTION
-    The TemplateModule module provides PowerShell automation capabilities
+    The Invoke-ADDSDomainController module provides PowerShell automation capabilities
     following enterprise-grade standards including:
 
     - Advanced function patterns with CmdletBinding and ShouldProcess

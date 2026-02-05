@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Logging module for TemplateModule with single-file appending.
+    Logging module for Invoke-ADDSDomainController with single-file appending.
 
 .DESCRIPTION
     Provides centralized logging to a single file with:
@@ -19,7 +19,7 @@
 
 # Maintain compatibility with existing $Global:LogFile usage
 if (-not $Global:LogFile) {
-    $Global:LogFile = "$env:TEMP\TemplateModule_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    $Global:LogFile = "$env:TEMP\Invoke-ADDSDomainController_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 }
 
 # Use Global variable as the primary log file path (for backward compatibility)
@@ -153,7 +153,7 @@ function Write-Log {
 
         # Initialize mutex for thread safety (reuse existing if available)
         if (-not $script:LogMutex) {
-            $script:LogMutex = [System.Threading.Mutex]::new($false, "Global\TemplateModuleLog")
+            $script:LogMutex = [System.Threading.Mutex]::new($false, "Global\Invoke-ADDSDomainControllerLog")
         }
     }
 
