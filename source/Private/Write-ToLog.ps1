@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+﻿#Requires -Version 7.0
 
 <#
 .SYNOPSIS
@@ -17,14 +17,9 @@
 # LOG FILE CONFIGURATION
 # ============================================================================
 
-# Maintain compatibility with existing $Global:LogFile usage
-if (-not $Global:LogFile) {
-    $Global:LogFile = "$env:TEMP\TemplateModule_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-}
-
-# Use Global variable as the primary log file path (for backward compatibility)
+# Initialize script-scoped log file path
 if (-not $script:LogFile) {
-    $script:LogFile = $Global:LogFile
+    $script:LogFile = "$env:TEMP\TemplateModule_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 }
 
 # Log rotation settings
@@ -35,10 +30,10 @@ $script:LogDirectoryCreated = $false
 $script:LogMutex = $null
 
 # ============================================================================
-# WRITE-LOG FUNCTION
+# WRITE-TOLOG FUNCTION
 # ============================================================================
 
-function Write-Log {
+function Write-ToLog {
     <#
 .SYNOPSIS
     Writes a message to a single, persistent log file with timestamp and log level.
@@ -67,36 +62,35 @@ function Write-Log {
     An ErrorRecord object to log with detailed information.
 
 .EXAMPLE
-    Write-Log "Operation started"
+    Write-ToLog "Operation started"
 
 .EXAMPLE
-    Write-Log "Configuration loaded" -Level DEBUG
+    Write-ToLog "Configuration loaded" -Level DEBUG
 
 .EXAMPLE
-    Write-Log "Operation completed successfully" -Level SUCCESS
+    Write-ToLog "Operation completed successfully" -Level SUCCESS
 
 .EXAMPLE
-    Write-Log "Operation failed" -Level ERROR
+    Write-ToLog "Operation failed" -Level ERROR
 
 .EXAMPLE
     try {
         # Some operation
     }
     catch {
-        Write-Log -ErrorRecord $_
+        Write-ToLog -ErrorRecord $_
     }
 
 .NOTES
     Log file location: $script:LogFile
     Supports both syntaxes:
-    - New: Write-Log "message" -Level INFO
-    - Old: Write-Log -Message "message" -Level INFO
-
-    Suppression: PSAvoidGlobalVars - maintains compatibility with $Global:LogFile.
+    - New: Write-ToLog "message" -Level INFO
+    - Old: Write-ToLog -Message "message" -Level INFO
 #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([bool])]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'Write-Host is intentional for colored console output in a logging function.')]
     param (
         [Parameter(
             Mandatory,
@@ -128,11 +122,6 @@ function Write-Log {
     )
 
     begin {
-        # Sync script-scoped variable with global for backward compatibility
-        if ($Global:LogFile -and $script:LogFile -ne $Global:LogFile) {
-            $script:LogFile = $Global:LogFile
-        }
-
         # Ensure log directory exists (once per invocation)
         if (-not $script:LogDirectoryCreated) {
             $logDir = Split-Path -Path $script:LogFile -Parent
@@ -186,8 +175,8 @@ Inner Exception: $($ErrorRecord.Exception.InnerException.Message)
             }
 
             # Log main message first, then details as DEBUG
-            Write-Log -Message $Message -Level 'ERROR' -PassThru:$PassThru
-            Write-Log -Message $errorDetails -Level 'DEBUG' -PassThru:$PassThru
+            Write-ToLog -Message $Message -Level 'ERROR' -PassThru:$PassThru
+            Write-ToLog -Message $errorDetails -Level 'DEBUG' -PassThru:$PassThru
             return
         }
 
@@ -322,7 +311,7 @@ function Invoke-LogRotation {
 # HELPER FUNCTIONS
 # ============================================================================
 
-function Write-ErrorLog {
+function Write-ErrorToLog {
     <#
 .SYNOPSIS
     Safely logs error details without JSON serialization issues.
@@ -341,7 +330,7 @@ function Write-ErrorLog {
         # Some operation
     }
     catch {
-        Write-ErrorLog -ErrorRecord $_
+        Write-ErrorToLog -ErrorRecord $_
     }
 #>
     [CmdletBinding()]
@@ -363,27 +352,27 @@ function Write-ErrorLog {
         $ErrorRecord.Exception.Message
     }
 
-    Write-Log -Message $errorMsg -Level 'ERROR'
+    Write-ToLog -Message $errorMsg -Level 'ERROR'
 
     # Detailed error information (only with -Verbose)
-    Write-Log -Message "Error Type: $($ErrorRecord.Exception.GetType().FullName)" -Level 'DEBUG'
-    Write-Log -Message "Error Category: $($ErrorRecord.CategoryInfo.Category)" -Level 'DEBUG'
+    Write-ToLog -Message "Error Type: $($ErrorRecord.Exception.GetType().FullName)" -Level 'DEBUG'
+    Write-ToLog -Message "Error Category: $($ErrorRecord.CategoryInfo.Category)" -Level 'DEBUG'
 
     if ($ErrorRecord.CategoryInfo.TargetName) {
-        Write-Log -Message "Target: $($ErrorRecord.CategoryInfo.TargetName)" -Level 'DEBUG'
+        Write-ToLog -Message "Target: $($ErrorRecord.CategoryInfo.TargetName)" -Level 'DEBUG'
     }
 
     if ($ErrorRecord.InvocationInfo) {
-        Write-Log -Message "Location: $($ErrorRecord.InvocationInfo.ScriptName):$($ErrorRecord.InvocationInfo.ScriptLineNumber)" -Level 'DEBUG'
-        Write-Log -Message "Command: $($ErrorRecord.InvocationInfo.Line.Trim())" -Level 'DEBUG'
+        Write-ToLog -Message "Location: $($ErrorRecord.InvocationInfo.ScriptName):$($ErrorRecord.InvocationInfo.ScriptLineNumber)" -Level 'DEBUG'
+        Write-ToLog -Message "Command: $($ErrorRecord.InvocationInfo.Line.Trim())" -Level 'DEBUG'
     }
 
     if ($ErrorRecord.Exception.InnerException) {
-        Write-Log -Message "Inner Exception: $($ErrorRecord.Exception.InnerException.Message)" -Level 'DEBUG'
+        Write-ToLog -Message "Inner Exception: $($ErrorRecord.Exception.InnerException.Message)" -Level 'DEBUG'
     }
 
     if ($IncludeStackTrace -and $ErrorRecord.ScriptStackTrace) {
-        Write-Log -Message "Stack Trace:`n$($ErrorRecord.ScriptStackTrace)" -Level 'DEBUG'
+        Write-ToLog -Message "Stack Trace:`n$($ErrorRecord.ScriptStackTrace)" -Level 'DEBUG'
     }
 }
 
@@ -438,7 +427,6 @@ function Set-LogFilePath {
         }
 
         $script:LogFile = $Path
-        $Global:LogFile = $Path  # Maintain backward compatibility
         $script:LogDirectoryCreated = $false  # Force directory check on next write
         Write-Verbose "Log file path set to: $Path"
     }
@@ -477,7 +465,7 @@ function Clear-LogFile {
         }
 
         Clear-Content -LiteralPath $script:LogFile
-        Write-Log "===== Log file cleared =====" "INFO"
+        Write-ToLog "===== Log file cleared =====" "INFO"
     }
 }
 
@@ -497,5 +485,5 @@ function Get-LogFileSize {
     if (Test-Path -LiteralPath $script:LogFile) {
         return (Get-Item -LiteralPath $script:LogFile).Length
     }
-    return 0
+    return [long]0
 }

@@ -111,7 +111,7 @@ function Get-Greeting {
             $ConfirmPreference = 'None'
         }
 
-        Write-Log -Message "Get-Greeting invoked with Style='$Style'" -Level INFO
+        Write-ToLog -Message "Get-Greeting invoked with Style='$Style'" -Level INFO
     }
 
     process {
@@ -133,7 +133,7 @@ function Get-Greeting {
         }
 
         if ($PSCmdlet.ShouldProcess($Name, "Generate $Style greeting")) {
-            Write-Log -Message "Greeting generated for '$Name' with style '$Style'" -Level SUCCESS
+            Write-ToLog -Message "Greeting generated for '$Name' with style '$Style'" -Level SUCCESS
 
             if ($PassThru) {
                 return [PSCustomObject]@{
@@ -150,6 +150,6 @@ function Get-Greeting {
     }
 
     end {
-        Write-Log -Message "Get-Greeting completed" -Level INFO
+        Write-ToLog -Message "Get-Greeting completed" -Level INFO
     }
 }

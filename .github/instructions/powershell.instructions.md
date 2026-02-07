@@ -43,12 +43,12 @@ $ParameterName
 
 ### 4. Enterprise Logging Standards
 
-**Use Write-Log Pattern (see Write-Log.ps1 reference):**
+**Use Write-ToLog Pattern (see Write-ToLog.ps1 reference):**
 ```powershell
-Write-Log -Message "Operation starting" -Level INFO
-Write-Log -Message "Warning detected" -Level WARN
-Write-Log -Message "Operation succeeded" -Level SUCCESS
-Write-Log -Message "Operation failed: $($_.Exception.Message)" -Level ERROR
+Write-ToLog -Message "Operation starting" -Level INFO
+Write-ToLog -Message "Warning detected" -Level WARN
+Write-ToLog -Message "Operation succeeded" -Level SUCCESS
+Write-ToLog -Message "Operation failed: $($_.Exception.Message)" -Level ERROR
 ```
 
 **Logging Requirements:**
@@ -138,14 +138,14 @@ $selected = $items |
     Select-Object -First $Count
 
 $info = $selected | ForEach-Object { "$($_.Name) ($($_.Size))" }
-Write-Log -Message "Selected $Count of $($items.Count): $($info -join ', ')" -Level INFO
+Write-ToLog -Message "Selected $Count of $($items.Count): $($info -join ', ')" -Level INFO
 ```
 
 **Capacity Metrics:**
 ```powershell
 $totalGB = [Math]::Round($totalCapacity / 1GB, 2)
 $usableGB = [Math]::Round($usableCapacity / 1GB, 2)
-Write-Log -Message "Capacity - Total: $totalGB GB, Usable: $usableGB GB" -Level INFO
+Write-ToLog -Message "Capacity - Total: $totalGB GB, Usable: $usableGB GB" -Level INFO
 ```
 
 ### 9. Security & Best Practices
@@ -195,7 +195,7 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse -Settings PSGallery
 - [ ] `Force` parameter for operations requiring confirmation
 - [ ] Enhanced error messages with available options
 - [ ] PSStyle usage follows fallback pattern
-- [ ] Logging uses Write-Log with appropriate levels
+- [ ] Logging uses Write-ToLog with appropriate levels
 - [ ] ScriptAnalyzer: 0 warnings
 - [ ] Idempotency validated
 
@@ -221,4 +221,4 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse -Settings PSGallery
 
 ---
 
-**Reference Implementation:** Write-Log.ps1 (enterprise-grade logging)
+**Reference Implementation:** Write-ToLog.ps1 (enterprise-grade logging)

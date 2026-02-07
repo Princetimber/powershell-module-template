@@ -10,7 +10,7 @@ A production-ready PowerShell module template built with the [Sampler](https://g
 - **CI/CD Integration** - Pre-configured GitHub Actions and Azure Pipelines workflows
 - **AI Agent Instructions** - Complete `.github/instructions/` files for GitHub Copilot and Claude Code
 - **Example Functions** - Working examples with enterprise patterns (logging, error handling, idempotency)
-- **Thread-Safe Logging** - Enterprise-grade `Write-Log` with rotation, redaction, and PSStyle output
+- **Thread-Safe Logging** - Enterprise-grade `Write-ToLog` with rotation, redaction, and PSStyle output
 - **Quick Setup** - Interactive `Initialize-Template.ps1` script for rapid customization
 
 ## 🚀 Quick Start
@@ -93,7 +93,7 @@ Follow the patterns in `Get-Greeting.ps1` and `Get-Greeting.tests.ps1` for enter
 │   │   └── Get-Greeting.ps1              # Example public function
 │   └── Private/                          # Internal helpers (one per file)
 │       ├── Format-GreetingMessage.ps1    # Example private function
-│       └── Write-Log.ps1                 # Enterprise logging (502 lines)
+│       └── Write-ToLog.ps1                 # Enterprise logging (502 lines)
 ├── tests/
 │   ├── tests.instructions.md             # Testing standards
 │   ├── QA/
@@ -103,7 +103,7 @@ Follow the patterns in `Get-Greeting.ps1` and `Get-Greeting.tests.ps1` for enter
 │       │   └── Get-Greeting.tests.ps1    # Unit tests for Get-Greeting
 │       └── Private/
 │           ├── Format-GreetingMessage.tests.ps1
-│           └── Write-Log.tests.ps1
+│           └── Write-ToLog.tests.ps1
 ├── .gitattributes
 ├── .gitignore
 ├── azure-pipelines.yml                   # Azure Pipelines (multi-platform, PSGallery deploy)
@@ -183,11 +183,11 @@ Demonstrates:
 - Multi-line parameter declarations
 - Input validation (`ValidateSet`, `ValidateNotNullOrEmpty`)
 - `PassThru` and `Force` parameters
-- Enterprise logging with `Write-Log`
+- Enterprise logging with `Write-ToLog`
 - Idempotency pattern
 - PSStyle-safe error messages
 
-### Write-Log (Private Function)
+### Write-ToLog (Private Function)
 
 Enterprise-grade logging with:
 - Thread-safe operation using mutex

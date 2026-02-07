@@ -13,7 +13,7 @@ AfterAll {
 Describe 'Get-Greeting' -Tag 'Unit' {
 
     BeforeAll {
-        Mock -ModuleName $script:dscModuleName -CommandName Write-Log -MockWith {}
+        Mock -ModuleName $script:dscModuleName -CommandName Write-ToLog -MockWith {}
     }
 
     Context 'When generating greetings with default style' {
@@ -122,10 +122,10 @@ Describe 'Get-Greeting' -Tag 'Unit' {
     }
 
     Context 'When logging operations' {
-        It 'Should call Write-Log during execution' {
+        It 'Should call Write-ToLog during execution' {
             Get-Greeting -Name 'Alice'
 
-            Should -Invoke -ModuleName $script:dscModuleName -CommandName Write-Log -Times 3 -Exactly
+            Should -Invoke -ModuleName $script:dscModuleName -CommandName Write-ToLog -Times 3 -Exactly
         }
     }
 }
