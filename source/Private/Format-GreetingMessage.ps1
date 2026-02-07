@@ -50,7 +50,6 @@ function Format-GreetingMessage {
 
     [CmdletBinding()]
     [OutputType([string])]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     param (
         [Parameter(Mandatory)]
         [AllowEmptyString()]
@@ -67,7 +66,7 @@ function Format-GreetingMessage {
     $trimmedName = $Name.Trim()
 
     if ([string]::IsNullOrWhiteSpace($trimmedName)) {
-        Write-Log -Message "Format-GreetingMessage received empty name" -Level WARN
+        Write-ToLog -Message "Format-GreetingMessage received empty name" -Level WARN
         return $null
     }
 
@@ -77,7 +76,7 @@ function Format-GreetingMessage {
         'Professional' { "Hello $trimmedName, welcome." }
     }
 
-    Write-Log -Message "Formatted greeting: Style=$Style, Name=$trimmedName" -Level DEBUG
+    Write-ToLog -Message "Formatted greeting: Style=$Style, Name=$trimmedName" -Level DEBUG
 
     return $greeting
 }

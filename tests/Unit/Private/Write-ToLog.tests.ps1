@@ -10,14 +10,13 @@ AfterAll {
 	Get-Module -Name $script:dscModuleName -All | Remove-Module -Force
 }
 
-Describe 'Write-Log' -Tag 'Unit' {
+Describe 'Write-ToLog' -Tag 'Unit' {
 
 	BeforeEach {
 		InModuleScope -ModuleName $dscModuleName {
 			# Set up a test log file path
 			$script:testLogPath = Join-Path $env:TEMP "test_log_$(Get-Date -Format 'yyyyMMddHHmmss').log"
 			$script:LogFile = $script:testLogPath
-			$Global:LogFile = $script:testLogPath
 		}
 	}
 
@@ -33,7 +32,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When logging simple messages' {
 		It 'Should create log file on first write' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Test message' -Level INFO -NoConsole
+				Write-ToLog -Message 'Test message' -Level INFO -NoConsole
 
 				Test-Path $script:testLogPath | Should -Be $true
 			}
@@ -41,7 +40,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should write message to log file' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Test message' -Level INFO -NoConsole
+				Write-ToLog -Message 'Test message' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'Test message'
@@ -50,7 +49,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should include timestamp in log entry' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Test' -Level INFO -NoConsole
+				Write-ToLog -Message 'Test' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -59,7 +58,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should include log level in entry' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Test' -Level ERROR -NoConsole
+				Write-ToLog -Message 'Test' -Level ERROR -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[ERROR\]'
@@ -70,7 +69,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When using different log levels' {
 		It 'Should log INFO messages' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Info message' -Level INFO -NoConsole
+				Write-ToLog -Message 'Info message' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[INFO\].*Info message'
@@ -79,7 +78,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should log DEBUG messages' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Debug message' -Level DEBUG -NoConsole
+				Write-ToLog -Message 'Debug message' -Level DEBUG -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[DEBUG\].*Debug message'
@@ -88,7 +87,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should log WARN messages' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Warning message' -Level WARN -NoConsole
+				Write-ToLog -Message 'Warning message' -Level WARN -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[WARN\].*Warning message'
@@ -97,7 +96,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should log ERROR messages' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Error message' -Level ERROR -NoConsole
+				Write-ToLog -Message 'Error message' -Level ERROR -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[ERROR\].*Error message'
@@ -106,7 +105,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should log SUCCESS messages' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Success message' -Level SUCCESS -NoConsole
+				Write-ToLog -Message 'Success message' -Level SUCCESS -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[SUCCESS\].*Success message'
@@ -117,7 +116,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When redacting sensitive information' {
 		It 'Should redact password in key=value format' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'password=secret123' -Level INFO -NoConsole
+				Write-ToLog -Message 'password=secret123' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'password=\*\*\*REDACTED\*\*\*'
@@ -127,7 +126,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should redact token in key=value format' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'token=abc123xyz' -Level INFO -NoConsole
+				Write-ToLog -Message 'token=abc123xyz' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'token=\*\*\*REDACTED\*\*\*'
@@ -137,7 +136,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should redact API key in JSON format' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message '{"apikey": "secret123"}' -Level INFO -NoConsole
+				Write-ToLog -Message '{"apikey": "secret123"}' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'apikey": "\*\*\*REDACTED\*\*\*'
@@ -147,7 +146,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should be case insensitive when redacting' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'PASSWORD=secret' -Level INFO -NoConsole
+				Write-ToLog -Message 'PASSWORD=secret' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'PASSWORD=\*\*\*REDACTED\*\*\*'
@@ -158,8 +157,8 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When appending multiple messages' {
 		It 'Should append messages to existing log' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'First message' -Level INFO -NoConsole
-				Write-Log -Message 'Second message' -Level INFO -NoConsole
+				Write-ToLog -Message 'First message' -Level INFO -NoConsole
+				Write-ToLog -Message 'Second message' -Level INFO -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'First message'
@@ -169,9 +168,9 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should preserve message order' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log -Message 'Message 1' -Level INFO -NoConsole
-				Write-Log -Message 'Message 2' -Level INFO -NoConsole
-				Write-Log -Message 'Message 3' -Level INFO -NoConsole
+				Write-ToLog -Message 'Message 1' -Level INFO -NoConsole
+				Write-ToLog -Message 'Message 2' -Level INFO -NoConsole
+				Write-ToLog -Message 'Message 3' -Level INFO -NoConsole
 
 				$lines = Get-Content $script:testLogPath
 				$lines[0] | Should -Match 'Message 1'
@@ -184,7 +183,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When using PassThru parameter' {
 		It 'Should return true on successful write' {
 			InModuleScope -ModuleName $dscModuleName {
-				$result = Write-Log -Message 'Test' -Level INFO -NoConsole -PassThru
+				$result = Write-ToLog -Message 'Test' -Level INFO -NoConsole -PassThru
 
 				$result | Should -Be $true
 			}
@@ -194,7 +193,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 	Context 'When using positional parameters' {
 		It 'Should accept message as first positional parameter' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log 'Positional message' -NoConsole
+				Write-ToLog 'Positional message' -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match 'Positional message'
@@ -203,7 +202,7 @@ Describe 'Write-Log' -Tag 'Unit' {
 
 		It 'Should accept level as second positional parameter' {
 			InModuleScope -ModuleName $dscModuleName {
-				Write-Log 'Test message' ERROR -NoConsole
+				Write-ToLog 'Test message' ERROR -NoConsole
 
 				$content = Get-Content $script:testLogPath -Raw
 				$content | Should -Match '\[ERROR\]'

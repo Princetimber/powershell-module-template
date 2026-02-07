@@ -13,7 +13,7 @@ AfterAll {
 Describe 'Format-GreetingMessage' -Tag 'Unit' {
 
     BeforeAll {
-        Mock -ModuleName $script:dscModuleName -CommandName Write-Log -MockWith {}
+        Mock -ModuleName $script:dscModuleName -CommandName Write-ToLog -MockWith {}
     }
 
     Context 'When formatting with Formal style' {

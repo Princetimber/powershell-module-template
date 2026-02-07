@@ -10,7 +10,7 @@ LONG DESCRIPTION
 
     - Advanced function patterns with CmdletBinding and ShouldProcess
     - Comprehensive input validation
-    - Enterprise logging with Write-Log (thread-safe, rotation, redaction)
+    - Enterprise logging with Write-ToLog (thread-safe, rotation, redaction)
     - Idempotent operations (safe re-runs)
     - Full Pester v5+ test coverage
 
@@ -36,7 +36,7 @@ NOTES
     All state-changing operations support -WhatIf and -Confirm via
     SupportsShouldProcess.
 
-    Logging is handled by Write-Log which provides:
+    Logging is handled by Write-ToLog which provides:
     - Thread-safe file logging with mutex
     - Automatic log rotation (10MB threshold)
     - Sensitive data redaction
@@ -44,5 +44,5 @@ NOTES
 
 SEE ALSO
     Get-Greeting
-    Write-Log
+    Write-ToLog
     Format-GreetingMessage

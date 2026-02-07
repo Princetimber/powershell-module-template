@@ -1,4 +1,4 @@
-<#
+﻿<#
     This file is intentionally left empty. It is must be left here for the module
     manifest to refer to. It is recreated during the build process.
   #>
@@ -11,7 +11,7 @@
         . $function.FullName
      }
      catch {
-        Write-Host "$($PSStyle.Foreground.Red)✗ Failed to dot-source private function file: $($function.FullName). Error: $($_.Exception.Message)$($PSStyle.Reset)"
+        Write-Warning "Failed to dot-source private function file: $($function.FullName). Error: $($_.Exception.Message)"
      }
  }
 
@@ -23,6 +23,6 @@
         Export-ModuleMember -Function $function.BaseName
      }
      catch {
-        Write-Host "$($PSStyle.Foreground.Red)✗ Failed to dot-source public function file: $($function.FullName). Error: $($_.Exception.Message)$($PSStyle.Reset)"
+        Write-Warning "Failed to dot-source public function file: $($function.FullName). Error: $($_.Exception.Message)"
      }
  }
