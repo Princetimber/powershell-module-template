@@ -1,7 +1,11 @@
 ﻿<#
-    This file is intentionally left empty. It is must be left here for the module
-    manifest to refer to. It is recreated during the build process.
-  #>
+    Development-time module loader. During development, this file dot-sources all
+    .ps1 files from Private/ and Public/ so you can import the module directly.
+
+    At build time, Sampler/ModuleBuilder compiles a different .psm1 into the
+    output folder that inlines all function definitions into a single file.
+    Do not add runtime logic here that you expect to survive the build.
+#>
 
 
    # dot-Source Private functions

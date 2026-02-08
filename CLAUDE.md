@@ -23,7 +23,6 @@ After cloning, run `Initialize-Template.ps1` to customize the template with your
 │   ├── {{MODULE_NAME}}.psm1      # Dot-sources Public/ and Private/
 │   ├── Public/                   # Exported functions (one per file)
 │   ├── Private/                  # Internal helper functions (one per file)
-│   ├── Classes/                  # PowerShell classes (numbered for load order)
 │   └── en-US/                    # Help files
 ├── tests/
 │   ├── QA/                       # ScriptAnalyzer, changelog, help quality
@@ -61,7 +60,7 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse
 
 - **One function per file**, filename matches function name exactly (e.g., `Get-Greeting.ps1`)
 - **Advanced functions**: always use `[CmdletBinding()]`
-- **SupportsShouldProcess**: required for any state-changing operation
+- **SupportsShouldProcess**: required for state-changing operations only (Set-, New-, Remove-, Export-). Never on read-only functions (Get-, Test-, Find-)
 - **Comment-based help**: `.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE` on all public functions
 - **Input validation**: mandatory — use `ValidateSet`, `ValidatePattern`, `ValidateNotNullOrEmpty`
 - **Error handling**: `try/catch/finally`, throw actionable errors, never swallow exceptions
@@ -86,7 +85,7 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse
   - Release: Publishes to PSGallery and GitHub Releases on tag `v*`
 
 - **Azure Pipelines** (`azure-pipelines.yml`)
-  - Stages: Build → Test (multi-platform: Linux, Windows PS7, Windows PS5.1, macOS) → Code Coverage → Deploy
+  - Stages: Build → Test (multi-platform: Linux, Windows PS7, macOS) → Code Coverage → Deploy
   - Deploy publishes to PSGallery and GitHub Releases on `main` branch
 
 ## AI Agent Operating Principles
@@ -140,5 +139,3 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse
 ## Further Reference
 
 - `.github/copilot-instructions.md` — GitHub Copilot-specific instructions
-- `.github/instructions/` — path-specific standards for PowerShell, source, build, CI, and docs
-- `tests/tests.instructions.md` — Pester testing standards

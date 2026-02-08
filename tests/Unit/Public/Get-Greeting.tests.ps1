@@ -93,17 +93,11 @@ Describe 'Get-Greeting' -Tag 'Unit' {
         }
     }
 
-    Context 'When using ShouldProcess' {
-        It 'Should support WhatIf' {
-            $result = Get-Greeting -Name 'Alice' -WhatIf
-
-            $result | Should -BeNullOrEmpty
-        }
-
-        It 'Should execute with Force parameter' {
-            $result = Get-Greeting -Name 'Alice' -Force
-
-            $result | Should -Be 'Hello Alice, welcome.'
+    Context 'When verifying CmdletBinding' {
+        It 'Should not have SupportsShouldProcess' {
+            $cmd = Get-Command -Name Get-Greeting
+            $cmd.Parameters.ContainsKey('WhatIf') | Should -BeFalse
+            $cmd.Parameters.ContainsKey('Confirm') | Should -BeFalse
         }
     }
 
@@ -125,7 +119,7 @@ Describe 'Get-Greeting' -Tag 'Unit' {
         It 'Should call Write-ToLog during execution' {
             Get-Greeting -Name 'Alice'
 
-            Should -Invoke -ModuleName $script:dscModuleName -CommandName Write-ToLog -Times 3 -Exactly
+            Should -Invoke -ModuleName $script:dscModuleName -CommandName Write-ToLog -Times 4 -Exactly
         }
     }
 }

@@ -6,19 +6,22 @@ SHORT DESCRIPTION
 
 LONG DESCRIPTION
     The TemplateModule module provides PowerShell automation capabilities
-    following enterprise-grade standards including:
+    following production-grade standards including:
 
-    - Advanced function patterns with CmdletBinding and ShouldProcess
+    - Advanced function patterns with CmdletBinding
+    - SupportsShouldProcess on state-changing operations only
     - Comprehensive input validation
-    - Enterprise logging with Write-ToLog (thread-safe, rotation, redaction)
-    - Idempotent operations (safe re-runs)
+    - Logging via native PowerShell streams (Write-Verbose, Write-Warning, etc.)
     - Full Pester v5+ test coverage
 
 COMMANDS
     Get-Greeting
-        Example public function demonstrating enterprise patterns.
         Generates a personalized greeting message with logging and
-        ShouldProcess support.
+        input validation. Read-only function.
+
+    Export-Greeting
+        Writes greeting messages to a file. Demonstrates correct
+        SupportsShouldProcess usage for state-changing operations.
 
 EXAMPLES
     Example 1: Basic usage
@@ -27,22 +30,21 @@ EXAMPLES
     Example 2: Get rich object output
         Get-Greeting -Name "World" -PassThru
 
-    Example 3: Preview changes without executing
-        Get-Greeting -Name "World" -WhatIf
+    Example 3: Export greetings to a file
+        Get-Greeting -Name "Alice", "Bob" | Export-Greeting -FilePath "./greetings.txt"
+
+    Example 4: Preview file export without writing
+        Export-Greeting -Greeting "Hello" -FilePath "./out.txt" -WhatIf
 
 NOTES
     This module requires PowerShell 7.0 or later.
 
-    All state-changing operations support -WhatIf and -Confirm via
-    SupportsShouldProcess.
-
-    Logging is handled by Write-ToLog which provides:
-    - Thread-safe file logging with mutex
-    - Automatic log rotation (10MB threshold)
-    - Sensitive data redaction
-    - ANSI color console output
+    SupportsShouldProcess (-WhatIf, -Confirm) is used only on functions
+    that change state (Export-Greeting), not on read-only functions
+    (Get-Greeting).
 
 SEE ALSO
     Get-Greeting
+    Export-Greeting
     Write-ToLog
     Format-GreetingMessage

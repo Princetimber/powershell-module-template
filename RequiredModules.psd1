@@ -12,14 +12,11 @@
     #    }
     #}
 
-    InvokeBuild                 = 'latest'
-    PSScriptAnalyzer            = 'latest'
-    Pester                      = 'latest'
-    ModuleBuilder               = 'latest'
-    ChangelogManagement         = 'latest'
-    Sampler                     = 'latest'
-    'Sampler.GitHubTasks'       = 'latest'
-
-
+    InvokeBuild                 = '[5.0,6.0)'
+    PSScriptAnalyzer            = '[1.22,2.0)'
+    Pester                      = '[5.6,6.0)'
+    ModuleBuilder               = '[3.0,4.0)'
+    ChangelogManagement         = '[3.0,4.0)'
+    Sampler                     = '[0.118,1.0)'
+    'Sampler.GitHubTasks'       = '[0.6,1.0)'
 }
-

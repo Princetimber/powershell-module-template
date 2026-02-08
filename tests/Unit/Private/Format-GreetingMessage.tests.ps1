@@ -71,19 +71,15 @@ Describe 'Format-GreetingMessage' -Tag 'Unit' {
             }
         }
 
-        It 'Should return null for whitespace-only name' {
+        It 'Should throw on whitespace-only name' {
             InModuleScope -ModuleName $script:dscModuleName {
-                $result = Format-GreetingMessage -Name '   '
-
-                $result | Should -BeNullOrEmpty
+                { Format-GreetingMessage -Name '   ' } | Should -Throw
             }
         }
 
-        It 'Should return null for empty string' {
+        It 'Should throw on empty string' {
             InModuleScope -ModuleName $script:dscModuleName {
-                $result = Format-GreetingMessage -Name ''
-
-                $result | Should -BeNullOrEmpty
+                { Format-GreetingMessage -Name '' } | Should -Throw
             }
         }
     }

@@ -41,7 +41,7 @@ function Format-GreetingMessage {
 
     .OUTPUTS
         [string]
-            The formatted greeting message, or $null if the name is invalid.
+            The formatted greeting message.
 
     .NOTES
         This is a private helper function. ShouldProcess is not required here
@@ -52,7 +52,8 @@ function Format-GreetingMessage {
     [OutputType([string])]
     param (
         [Parameter(Mandatory)]
-        [AllowEmptyString()]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('\S')]
         [string]
         $Name,
 
@@ -62,13 +63,7 @@ function Format-GreetingMessage {
         $Style = 'Professional'
     )
 
-    # Trim whitespace from the name
     $trimmedName = $Name.Trim()
-
-    if ([string]::IsNullOrWhiteSpace($trimmedName)) {
-        Write-ToLog -Message "Format-GreetingMessage received empty name" -Level WARN
-        return $null
-    }
 
     $greeting = switch ($Style) {
         'Formal'       { "Good day, $trimmedName." }
