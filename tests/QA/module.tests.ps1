@@ -1,5 +1,5 @@
 BeforeDiscovery {
-    $projectPath = "$($PSScriptRoot)\..\.." | Convert-Path
+    $projectPath = "$($PSScriptRoot)/../.." | Convert-Path
 
     <#
         If the QA tests are run outside of the build script (e.g with Invoke-Pester)
@@ -15,19 +15,19 @@ BeforeDiscovery {
 
     Remove-Module -Name $script:moduleName -Force -ErrorAction SilentlyContinue
 
-    $mut = Get-Module -Name $script:moduleName -ListAvailable |
+    $script:mut = Get-Module -Name $script:moduleName -ListAvailable |
         Select-Object -First 1 |
             Import-Module -Force -ErrorAction Stop -PassThru
 }
 
 BeforeAll {
     # Convert-Path required for PS7 or Join-Path fails
-    $projectPath = "$($PSScriptRoot)\..\.." | Convert-Path
+    $projectPath = "$($PSScriptRoot)/../.." | Convert-Path
     # Get git-related project path. This is relevant for modules that will not be deployed in the root folder of Git.
     $gitTopLevelPath = (&git rev-parse --show-toplevel)
     $gitRelatedModulePath = (($projectPath -replace [regex]::Escape([IO.Path]::DirectorySeparatorChar), '/') -replace $gitTopLevelPath, '')
     if (-not [string]::IsNullOrEmpty($gitRelatedModulePath)) { $gitRelatedModulePath = $gitRelatedModulePath.Trim('/')  + '/' }
-    $escapedGitRelatedModulePath = [regex]::Escape($gitRelatedModulePath)
+    $script:escapedGitRelatedModulePath = [regex]::Escape($gitRelatedModulePath)
 
     <#
         If the QA tests are run outside of the build script (e.g with Invoke-Pester)
@@ -41,8 +41,8 @@ BeforeAll {
 
     $script:moduleName = $ProjectName
 
-    $sourcePath = (
-        Get-ChildItem -Path $projectPath\*\*.psd1 |
+    $script:sourcePath = (
+        Get-ChildItem -Path "$projectPath/*/*.psd1" |
             Where-Object -FilterScript {
                 ($_.Directory.Name -match 'source|src' -or $_.Directory.Name -eq $_.BaseName) `
                     -and $(
@@ -76,11 +76,11 @@ Describe 'Changelog Management' -Tag 'Changelog' {
             $headCommit = &git rev-parse HEAD
             $defaultBranchCommit = &git rev-parse origin/main
             $filesChanged += (&git @('diff', "$defaultBranchCommit...$headCommit", '--name-only') |
-                Where-Object { $_ -match "^$escapedGitRelatedModulePath" }) -replace "^$escapedGitRelatedModulePath", ""
+                Where-Object { $_ -match "^$script:escapedGitRelatedModulePath" }) -replace "^$script:escapedGitRelatedModulePath", ""
         }
 
         $filesStagedAndUnstaged = (&git @('diff', 'HEAD', '--name-only') 2>&1 |
-            Where-Object { $_ -match "^$escapedGitRelatedModulePath" }) -replace "^$escapedGitRelatedModulePath", ""
+            Where-Object { $_ -match "^$script:escapedGitRelatedModulePath" }) -replace "^$script:escapedGitRelatedModulePath", ""
 
         $filesChanged += $filesStagedAndUnstaged
 
@@ -116,7 +116,7 @@ Describe 'General module control' -Tags 'FunctionalQuality' {
 
 BeforeDiscovery {
     # Must use the imported module to build test cases.
-    $allModuleFunctions = & $mut { Get-Command -Module $args[0] -CommandType Function } $script:moduleName
+    $allModuleFunctions = & $script:mut { Get-Command -Module $args[0] -CommandType Function } $script:moduleName
 
     # Build test cases.
     $testCases = @()
@@ -133,7 +133,7 @@ Describe 'Quality for module' -Tags 'TestQuality' {
     BeforeDiscovery {
         if (Get-Command -Name Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)
         {
-            $scriptAnalyzerRules = Get-ScriptAnalyzerRule
+            $script:scriptAnalyzerRules = Get-ScriptAnalyzerRule
         }
         else
         {
@@ -149,11 +149,11 @@ Describe 'Quality for module' -Tags 'TestQuality' {
     }
 
     It 'Should have a unit test for <Name>' -ForEach $testCases {
-        Get-ChildItem -Path 'tests\' -Recurse -Include "$Name.Tests.ps1" | Should -Not -BeNullOrEmpty
+        Get-ChildItem -Path 'tests/' -Recurse -Include "$Name.Tests.ps1" | Should -Not -BeNullOrEmpty
     }
 
-    It 'Should pass Script Analyzer for <Name>' -ForEach $testCases -Skip:(-not $scriptAnalyzerRules) {
-        $functionFile = Get-ChildItem -Path $sourcePath -Recurse -Include "$Name.ps1"
+    It 'Should pass Script Analyzer for <Name>' -ForEach $testCases -Skip:(-not $script:scriptAnalyzerRules) {
+        $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
         $pssaResult = (Invoke-ScriptAnalyzer -Path $functionFile.FullName)
         $report = $pssaResult | Format-Table -AutoSize | Out-String -Width 110
@@ -164,7 +164,7 @@ Describe 'Quality for module' -Tags 'TestQuality' {
 
 Describe 'Help for module' -Tags 'helpQuality' {
     It 'Should have .SYNOPSIS for <Name>' -ForEach $testCases {
-        $functionFile = Get-ChildItem -Path $sourcePath -Recurse -Include "$Name.ps1"
+        $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
         $scriptFileRawContent = Get-Content -Raw -Path $functionFile.FullName
 
@@ -183,7 +183,7 @@ Describe 'Help for module' -Tags 'helpQuality' {
     }
 
     It 'Should have a .DESCRIPTION with length greater than 40 characters for <Name>' -ForEach $testCases {
-        $functionFile = Get-ChildItem -Path $sourcePath -Recurse -Include "$Name.ps1"
+        $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
         $scriptFileRawContent = Get-Content -Raw -Path $functionFile.FullName
 
@@ -202,7 +202,7 @@ Describe 'Help for module' -Tags 'helpQuality' {
     }
 
     It 'Should have at least one (1) example for <Name>' -ForEach $testCases {
-        $functionFile = Get-ChildItem -Path $sourcePath -Recurse -Include "$Name.ps1"
+        $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
         $scriptFileRawContent = Get-Content -Raw -Path $functionFile.FullName
 
@@ -224,7 +224,7 @@ Describe 'Help for module' -Tags 'helpQuality' {
     }
 
     It 'Should have described all parameters for <Name>' -ForEach $testCases {
-        $functionFile = Get-ChildItem -Path $sourcePath -Recurse -Include "$Name.ps1"
+        $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
         $scriptFileRawContent = Get-Content -Raw -Path $functionFile.FullName
 
