@@ -14,6 +14,24 @@ PowerShell module template built with the **Sampler** framework. This template s
 
 After cloning, run `Initialize-Template.ps1` to customize the template with your module name, author, and description.
 
+## PowerShell Development Standards
+
+- Always run `Invoke-ScriptAnalyzer` after modifying any `.ps1` or `.psm1` files and fix all warnings before committing.
+- Use `Write-ToLog` (not `Write-Log`) as the standard logging function across all modules.
+- All tests must be cross-platform compatible (macOS and Windows). Avoid Windows-only cmdlets without mocking, hardcoded Windows paths, or reliance on Windows-specific environment variables.
+
+## Git & PR Workflow
+
+- When asked to fix and commit, always: (1) make fixes, (2) run all tests, (3) run ScriptAnalyzer, (4) commit to a feature branch, (5) create PR, (6) merge PR, (7) clean up branch.
+- Before deleting a branch, ensure HEAD is not checked out on that branch (switch to main first).
+- Perform file writes sequentially, not in parallel, to avoid cascade failures.
+
+## Testing
+
+- Always run the full test suite (`Invoke-Pester`) after any code changes, not just the tests for modified files.
+- When tests fail, fix and re-run iteratively until all pass before committing.
+- Mock Windows-only cmdlets (e.g., `Get-Service`, `Get-EventLog`) when writing tests that need to run cross-platform.
+
 ## Module Structure (Sampler Layout)
 
 ```
