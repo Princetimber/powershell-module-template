@@ -211,3 +211,215 @@ Describe 'Write-Log' -Tag 'Unit' {
 		}
 	}
 }
+
+Describe 'Get-LogFilePath' -Tag 'Unit' {
+
+	It 'Should return the current log file path' {
+		InModuleScope -ModuleName $dscModuleName {
+			$expectedPath = $script:LogFile
+
+			$result = Get-LogFilePath
+
+			$result | Should -Be $expectedPath
+		}
+	}
+
+	It 'Should return a string' {
+		InModuleScope -ModuleName $dscModuleName {
+			$result = Get-LogFilePath
+
+			$result | Should -BeOfType [string]
+		}
+	}
+}
+
+Describe 'Set-LogFilePath' -Tag 'Unit' {
+
+	BeforeEach {
+		InModuleScope -ModuleName $dscModuleName {
+			# Store original paths for restoration
+			$script:originalLogFile = $script:LogFile
+			$script:originalGlobalLogFile = $Global:LogFile
+		}
+	}
+
+	AfterEach {
+		InModuleScope -ModuleName $dscModuleName {
+			# Restore original paths
+			$script:LogFile = $script:originalLogFile
+			$Global:LogFile = $script:originalGlobalLogFile
+
+			# Clean up any test directories created
+			$testDir = Join-Path $env:TEMP 'SetLogFilePathTest'
+			if (Test-Path $testDir) {
+				Remove-Item $testDir -Recurse -Force -ErrorAction SilentlyContinue
+			}
+		}
+	}
+
+	It 'Should update the script-scoped log file path' {
+		InModuleScope -ModuleName $dscModuleName {
+			$newPath = Join-Path $env:TEMP 'test_setpath.log'
+
+			Set-LogFilePath -Path $newPath
+
+			$script:LogFile | Should -Be $newPath
+		}
+	}
+
+	It 'Should update the global log file path for backward compatibility' {
+		InModuleScope -ModuleName $dscModuleName {
+			$newPath = Join-Path $env:TEMP 'test_setpath_global.log'
+
+			Set-LogFilePath -Path $newPath
+
+			$Global:LogFile | Should -Be $newPath
+		}
+	}
+
+	It 'Should reset LogDirectoryCreated flag' {
+		InModuleScope -ModuleName $dscModuleName {
+			$script:LogDirectoryCreated = $true
+			$newPath = Join-Path $env:TEMP 'test_setpath_reset.log'
+
+			Set-LogFilePath -Path $newPath
+
+			$script:LogDirectoryCreated | Should -Be $false
+		}
+	}
+
+	It 'Should create directory when Force is specified and directory does not exist' {
+		InModuleScope -ModuleName $dscModuleName {
+			$testDir = Join-Path $env:TEMP 'SetLogFilePathTest'
+			$newPath = Join-Path $testDir 'forced.log'
+
+			# Ensure directory does not exist
+			if (Test-Path $testDir) {
+				Remove-Item $testDir -Recurse -Force
+			}
+
+			Set-LogFilePath -Path $newPath -Force
+
+			Test-Path $testDir | Should -Be $true
+			$script:LogFile | Should -Be $newPath
+		}
+	}
+
+	It 'Should support WhatIf without making changes' {
+		InModuleScope -ModuleName $dscModuleName {
+			$originalPath = $script:LogFile
+			$newPath = Join-Path $env:TEMP 'test_whatif.log'
+
+			Set-LogFilePath -Path $newPath -WhatIf
+
+			$script:LogFile | Should -Be $originalPath
+		}
+	}
+}
+
+Describe 'Write-ErrorLog' -Tag 'Unit' {
+
+	BeforeEach {
+		InModuleScope -ModuleName $dscModuleName {
+			# Set up a test log file path
+			$script:testLogPath = Join-Path $env:TEMP "test_errorlog_$(Get-Date -Format 'yyyyMMddHHmmss').log"
+			$script:LogFile = $script:testLogPath
+			$Global:LogFile = $script:testLogPath
+		}
+	}
+
+	AfterEach {
+		InModuleScope -ModuleName $dscModuleName {
+			# Clean up test log file
+			if (Test-Path $script:testLogPath) {
+				Remove-Item $script:testLogPath -Force -ErrorAction SilentlyContinue
+			}
+		}
+	}
+
+	It 'Should log the error message' {
+		InModuleScope -ModuleName $dscModuleName {
+			$errorRecord = $null
+			try {
+				throw 'Test error for logging'
+			}
+			catch {
+				$errorRecord = $_
+			}
+
+			Write-ErrorLog -ErrorRecord $errorRecord
+
+			$content = Get-Content $script:testLogPath -Raw
+			$content | Should -Match 'Test error for logging'
+		}
+	}
+
+	It 'Should log error at ERROR level' {
+		InModuleScope -ModuleName $dscModuleName {
+			$errorRecord = $null
+			try {
+				throw 'Error level test'
+			}
+			catch {
+				$errorRecord = $_
+			}
+
+			Write-ErrorLog -ErrorRecord $errorRecord
+
+			$content = Get-Content $script:testLogPath -Raw
+			$content | Should -Match '\[ERROR\]'
+		}
+	}
+
+	It 'Should include custom message prefix when provided' {
+		InModuleScope -ModuleName $dscModuleName {
+			$errorRecord = $null
+			try {
+				throw 'Prefixed error'
+			}
+			catch {
+				$errorRecord = $_
+			}
+
+			Write-ErrorLog -ErrorRecord $errorRecord -Message 'Custom prefix'
+
+			$content = Get-Content $script:testLogPath -Raw
+			$content | Should -Match 'Custom prefix'
+		}
+	}
+
+	It 'Should log stack trace when IncludeStackTrace is specified' {
+		InModuleScope -ModuleName $dscModuleName {
+			$errorRecord = $null
+			try {
+				throw 'Stack trace test'
+			}
+			catch {
+				$errorRecord = $_
+			}
+
+			Write-ErrorLog -ErrorRecord $errorRecord -IncludeStackTrace
+
+			$content = Get-Content $script:testLogPath -Raw
+			$content | Should -Match 'Stack Trace'
+		}
+	}
+
+	It 'Should log error details including category info' {
+		InModuleScope -ModuleName $dscModuleName {
+			$errorRecord = $null
+			try {
+				throw 'Category info test'
+			}
+			catch {
+				$errorRecord = $_
+			}
+
+			Write-ErrorLog -ErrorRecord $errorRecord
+
+			$content = Get-Content $script:testLogPath -Raw
+			# Should contain error details like command or category
+			$content | Should -Match '\[DEBUG\]'
+		}
+	}
+}

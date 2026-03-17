@@ -1,7 +1,7 @@
 <#
-    This file is intentionally left empty. It is must be left here for the module
-    manifest to refer to. It is recreated during the build process.
-  #>
+    This module file dot-sources all function files for development use.
+    During the Sampler build process, this file is recreated with all functions merged.
+#>
 
 
    # dot-Source Private functions

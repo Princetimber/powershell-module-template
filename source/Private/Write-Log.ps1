@@ -19,7 +19,7 @@
 
 # Maintain compatibility with existing $Global:LogFile usage
 if (-not $Global:LogFile) {
-    $Global:LogFile = "$env:TEMP\TemplateModule_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    $Global:LogFile = "$env:TEMP\{{MODULE_NAME}}_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 }
 
 # Use Global variable as the primary log file path (for backward compatibility)
@@ -153,7 +153,7 @@ function Write-Log {
 
         # Initialize mutex for thread safety (reuse existing if available)
         if (-not $script:LogMutex) {
-            $script:LogMutex = [System.Threading.Mutex]::new($false, "Global\TemplateModuleLog")
+            $script:LogMutex = [System.Threading.Mutex]::new($false, "Global\{{MODULE_NAME}}Log")
         }
     }
 
