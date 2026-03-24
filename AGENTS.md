@@ -4,9 +4,8 @@ Universal context for AI agents (Cursor, Copilot, Claude, etc.) working in this 
 
 ## Project
 
-PowerShell module template built with the [Sampler](https://github.com/gaelcolas/Sampler) framework.
-Target runtime: **PowerShell 7.0+**. After cloning, run `Initialize-Template.ps1` to replace
-placeholders (`{{MODULE_NAME}}`, `{{AUTHOR}}`, etc.) with your actual values.
+**{{MODULE_NAME}}** — a PowerShell module built with the [Sampler](https://github.com/gaelcolas/Sampler) framework.
+Target runtime: **PowerShell 7.0+**.
 
 ## Build / Test / Lint
 

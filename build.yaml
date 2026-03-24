@@ -70,9 +70,11 @@ BuildWorkflow:
   #merge:
   #- Merge_CodeCoverage_Files
 
-  publish:
-    - Publish_Release_To_GitHub # Runs first, if token is expired it will fail early
+  publish_psgallery:
     - publish_module_to_gallery
+
+  publish_github:
+    - Publish_Release_To_GitHub
 
 ####################################################
 #       PESTER  Configuration                      #
