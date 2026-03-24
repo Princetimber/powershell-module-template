@@ -2,7 +2,7 @@
 
 ## Overview
 
-PowerShell module template built with [Sampler](https://github.com/gaelcolas/Sampler).
+**{{MODULE_NAME}}** — a PowerShell module built with [Sampler](https://github.com/gaelcolas/Sampler).
 Target: PowerShell 7.0+. See `CLAUDE.md` for full project context and coding conventions.
 
 ## Environment

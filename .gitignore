@@ -2,6 +2,7 @@ output/
 
 **.bak
 *.local.*
+secrets.local.ps1
 !**/README.md
 .kitchen/
 
