@@ -370,34 +370,6 @@ try {
         }
     }
 
-    # Inline Format-GreetingMessage logic into Get-Greeting.ps1 and remove all references
-    $getGreetingPath = Join-Path -Path $templateRoot -ChildPath 'source/Public/Get-Greeting.ps1'
-    if ((Test-Path $getGreetingPath) -and $PSCmdlet.ShouldProcess($getGreetingPath, "Remove Format-GreetingMessage references")) {
-        $content = (Get-Content -Path $getGreetingPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
-
-        $content = $content.Replace(
-            "`n`n        The function delegates message formatting to the private helper`n        Format-GreetingMessage and logs all operations.",
-            ''
-        )
-
-        $inlinedGreeting = @'
-        $trimmedName = $Name.Trim()
-        $greeting = switch ($Style) {
-            'Formal'       { "Good day, $trimmedName." }
-            'Casual'       { "Hey $trimmedName!" }
-            'Professional' { "Hello $trimmedName, welcome." }
-        }
-'@
-
-        $content = $content.Replace(
-            '        $greeting = Format-GreetingMessage -Name $Name -Style $Style',
-            $inlinedGreeting
-        )
-
-        Set-Content -Path $getGreetingPath -Value $content -NoNewline -ErrorAction Stop
-        Write-Host "  Updated: Get-Greeting.ps1" -ForegroundColor Gray
-    }
-
     # Remove Format-GreetingMessage from about help file
     $helpFile = Get-ChildItem -Path (Join-Path -Path $templateRoot -ChildPath 'source/en-US') `
         -Filter 'about_*.help.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -431,6 +403,153 @@ try {
     }
 
     Write-ColorMessage "Format-GreetingMessage cleanup complete." -Type Success
+
+    # Remove Public example files (Get-Greeting, Export-Greeting) and all references
+    Write-Host ""
+    Write-ColorMessage "Removing example Public functions and references..." -Type Info
+
+    $publicFilesToRemove = @(
+        (Join-Path -Path $templateRoot -ChildPath 'source/Public/Get-Greeting.ps1'),
+        (Join-Path -Path $templateRoot -ChildPath 'source/Public/Export-Greeting.ps1'),
+        (Join-Path -Path $templateRoot -ChildPath 'tests/Unit/Public/Get-Greeting.tests.ps1'),
+        (Join-Path -Path $templateRoot -ChildPath 'tests/Unit/Public/Export-Greeting.tests.ps1')
+    )
+
+    foreach ($filePath in $publicFilesToRemove) {
+        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, "Remove example file")) {
+            Remove-Item -Path $filePath -Force -ErrorAction Stop
+            Write-Host "  Removed: $(Split-Path $filePath -Leaf)" -ForegroundColor Gray
+        }
+    }
+
+    # Update about help file - remove example function entries
+    $helpFile = Get-ChildItem -Path (Join-Path -Path $templateRoot -ChildPath 'source/en-US') `
+        -Filter 'about_*.help.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, "Remove example function entries from help")) {
+        $content = (Get-Content -Path $helpFile.FullName -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+
+        $oldCommands = @(
+            'COMMANDS',
+            '    Get-Greeting',
+            '        Generates a personalized greeting message with logging and',
+            '        input validation. Read-only function.',
+            '',
+            '    Export-Greeting',
+            '        Writes greeting messages to a file. Demonstrates correct',
+            '        SupportsShouldProcess usage for state-changing operations.'
+        ) -join "`n"
+        $content = $content.Replace($oldCommands, "COMMANDS`n    # Add your module's exported functions here.")
+
+        $oldExamples = @(
+            'EXAMPLES',
+            '    Example 1: Basic usage',
+            '        Get-Greeting -Name "World"',
+            '',
+            '    Example 2: Get rich object output',
+            '        Get-Greeting -Name "World" -PassThru',
+            '',
+            '    Example 3: Export greetings to a file',
+            '        Get-Greeting -Name "Alice", "Bob" | Export-Greeting -FilePath "./greetings.txt"',
+            '',
+            '    Example 4: Preview file export without writing',
+            '        Export-Greeting -Greeting "Hello" -FilePath "./out.txt" -WhatIf'
+        ) -join "`n"
+        $content = $content.Replace($oldExamples, "EXAMPLES`n    # Add usage examples for your module's functions here.")
+
+        $oldNotesSuffix = @(
+            '',
+            '',
+            '    SupportsShouldProcess (-WhatIf, -Confirm) is used only on functions',
+            '    that change state (Export-Greeting), not on read-only functions',
+            '    (Get-Greeting).'
+        ) -join "`n"
+        $content = $content.Replace($oldNotesSuffix, '')
+
+        $oldSeeAlso = @(
+            'SEE ALSO',
+            '    Get-Greeting',
+            '    Export-Greeting',
+            '    Write-ToLog'
+        ) -join "`n"
+        $content = $content.Replace($oldSeeAlso, "SEE ALSO`n    Write-ToLog")
+
+        Set-Content -Path $helpFile.FullName -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: $($helpFile.Name)" -ForegroundColor Gray
+    }
+
+    # Update README.md - remove example function references
+    $readmePath = Join-Path -Path $templateRoot -ChildPath 'README.md'
+    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, "Remove example function references from README")) {
+        $content = (Get-Content -Path $readmePath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+
+        $oldFollowLine = @(
+            '',
+            'Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` (state-changing with ShouldProcess).',
+            ''
+        ) -join "`n"
+        $content = $content.Replace($oldFollowLine, '')
+
+        $content = $content.Replace(
+            "`n│   │   ├── Get-Greeting.ps1              # Example read-only function`n│   │   └── Export-Greeting.ps1           # Example state-changing function",
+            ''
+        )
+
+        $content = $content.Replace(
+            "`n│       │   ├── Get-Greeting.tests.ps1`n│       │   └── Export-Greeting.tests.ps1",
+            ''
+        )
+
+        $oldPatterns = @(
+            '',
+            '',
+            '### Get-Greeting (Read-Only Function)',
+            '',
+            '- `[CmdletBinding()]` without ShouldProcess (read-only operations don''t need it)',
+            '- Pipeline input, `PassThru` for rich object output',
+            '- Input validation with `ValidateSet`, `ValidateNotNullOrEmpty`',
+            '- Proper `ErrorRecord` construction with `ThrowTerminatingError`',
+            '',
+            '### Export-Greeting (State-Changing Function)',
+            '',
+            '- `[CmdletBinding(SupportsShouldProcess, ConfirmImpact = ''Medium'')]` - correct use of ShouldProcess',
+            '- `-WhatIf` and `-Confirm` support for safe file operations',
+            '- `-Force` to overwrite, `-Append` to add to existing files',
+            '- `-PassThru` returning `[System.IO.FileInfo]`',
+            ''
+        ) -join "`n"
+        $content = $content.Replace($oldPatterns, "`n")
+
+        Set-Content -Path $readmePath -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: README.md" -ForegroundColor Gray
+    }
+
+    # Update CHANGELOG.md - remove example function entries
+    $changelogPath = Join-Path -Path $templateRoot -ChildPath 'CHANGELOG.md'
+    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, "Remove example function entries from CHANGELOG")) {
+        $content = (Get-Content -Path $changelogPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+
+        $oldExportGreetingEntry = @(
+            '',
+            '- Export-Greeting public function demonstrating correct ShouldProcess usage for',
+            '  state-changing operations (file writes with -WhatIf, -Confirm, -Force, -Append,',
+            '  -PassThru support).'
+        ) -join "`n"
+        $content = $content.Replace($oldExportGreetingEntry, '')
+
+        $oldGetGreetingEntries = @(
+            '',
+            '- Removed ShouldProcess from Get-Greeting — read-only functions should not use',
+            '  SupportsShouldProcess. Removed Force parameter accordingly.',
+            '- Replaced string-throw error handling in Get-Greeting with proper ErrorRecord',
+            '  construction via ThrowTerminatingError.'
+        ) -join "`n"
+        $content = $content.Replace($oldGetGreetingEntries, '')
+
+        Set-Content -Path $changelogPath -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: CHANGELOG.md" -ForegroundColor Gray
+    }
+
+    Write-ColorMessage "Example Public function cleanup complete." -Type Success
 
     # Verify no placeholders remain
     Write-Host ""
