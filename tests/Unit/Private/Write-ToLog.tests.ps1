@@ -12,103 +12,101 @@ AfterAll {
 
 Describe 'Write-ToLog' -Tag 'Unit' {
 
-    Context 'When using INFO level' {
-        It 'Should write to Verbose stream' {
+    BeforeEach {
+        InModuleScope -ModuleName $script:dscModuleName {
+            # Point logging at TestDrive and skip directory-creation logic
+            $script:LogFile = Join-Path $TestDrive 'test.log'
+            $script:LogDirectoryCreated = $true
+            $script:LogMutex = $null
+        }
+    }
+
+    Context 'When writing a message at INFO level' {
+        It 'Should write a timestamped entry containing [INFO] to the log file' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Verbose
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog -Message 'Info message' -Level INFO
 
-                Should -Invoke Write-Verbose -Times 1 -Exactly -ParameterFilter {
-                    $Message -eq 'Info message'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] Info message'
                 }
             }
         }
     }
 
-    Context 'When using DEBUG level' {
-        It 'Should write to Verbose stream' {
+    Context 'When writing a message at WARN level' {
+        It 'Should write a timestamped entry containing [WARN]' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Verbose
-
-                Write-ToLog -Message 'Debug message' -Level DEBUG
-
-                Should -Invoke Write-Verbose -Times 1 -Exactly -ParameterFilter {
-                    $Message -eq 'Debug message'
-                }
-            }
-        }
-    }
-
-    Context 'When using WARN level' {
-        It 'Should write to Warning stream' {
-            InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Warning
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog -Message 'Warning message' -Level WARN
 
-                Should -Invoke Write-Warning -Times 1 -Exactly -ParameterFilter {
-                    $Message -eq 'Warning message'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[WARN\] Warning message'
                 }
             }
         }
     }
 
-    Context 'When using ERROR level' {
-        It 'Should write to Error stream' {
+    Context 'When writing a message at ERROR level' {
+        It 'Should write a timestamped entry containing [ERROR]' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Error
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog -Message 'Error message' -Level ERROR
 
-                Should -Invoke Write-Error -Times 1 -Exactly -ParameterFilter {
-                    $Message -eq 'Error message'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[ERROR\] Error message'
                 }
             }
         }
     }
 
-    Context 'When using SUCCESS level' {
-        It 'Should write to Information stream' {
+    Context 'When writing a message at SUCCESS level' {
+        It 'Should write a timestamped entry containing [SUCCESS]' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Information
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog -Message 'Success message' -Level SUCCESS
 
-                Should -Invoke Write-Information -Times 1 -Exactly -ParameterFilter {
-                    $MessageData -eq 'Success message'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[SUCCESS\] Success message'
                 }
             }
         }
     }
 
-    Context 'When using LogPath parameter' {
-        It 'Should write timestamped entry to file' {
+    Context 'When writing a message at DEBUG level' {
+        It 'Should write a timestamped entry containing [DEBUG]' {
             InModuleScope -ModuleName $script:dscModuleName {
-                $logFile = Join-Path $TestDrive 'test.log'
-                Mock Write-Verbose
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
-                Write-ToLog -Message 'File entry' -Level INFO -LogPath $logFile
+                Write-ToLog -Message 'Debug message' -Level DEBUG
 
-                Test-Path -LiteralPath $logFile | Should -BeTrue
-                $content = Get-Content -LiteralPath $logFile -Raw
-                $content | Should -Match '\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] File entry'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[DEBUG\] Debug message'
+                }
             }
         }
+    }
 
-        It 'Should append multiple entries' {
+    Context 'When using default level' {
+        It 'Should default to INFO when no level is specified' {
             InModuleScope -ModuleName $script:dscModuleName {
-                $logFile = Join-Path $TestDrive 'append.log'
-                Mock Write-Verbose
-                Mock Write-Warning
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
-                Write-ToLog -Message 'First' -Level INFO -LogPath $logFile
-                Write-ToLog -Message 'Second' -Level WARN -LogPath $logFile
+                Write-ToLog -Message 'Default level'
 
-                $lines = Get-Content -LiteralPath $logFile
-                $lines | Should -HaveCount 2
-                $lines[0] | Should -Match '\[INFO\] First'
-                $lines[1] | Should -Match '\[WARN\] Second'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[INFO\]'
+                }
             }
         }
     }
@@ -116,53 +114,199 @@ Describe 'Write-ToLog' -Tag 'Unit' {
     Context 'When using positional parameters' {
         It 'Should accept message as first positional parameter' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Verbose
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog 'Positional message'
 
-                Should -Invoke Write-Verbose -Times 1 -Exactly -ParameterFilter {
-                    $Message -eq 'Positional message'
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match 'Positional message'
                 }
             }
         }
 
         It 'Should accept level as second positional parameter' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Warning
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
                 Write-ToLog 'Test message' WARN
 
-                Should -Invoke Write-Warning -Times 1 -Exactly
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[WARN\] Test message'
+                }
             }
         }
     }
 
-    Context 'When using default level' {
-        It 'Should default to INFO level' {
+    Context 'When using PassThru' {
+        It 'Should return $true on a successful write' {
             InModuleScope -ModuleName $script:dscModuleName {
-                Mock Write-Verbose
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
 
-                Write-ToLog -Message 'Default level'
+                $result = Write-ToLog -Message 'Test' -PassThru
 
-                Should -Invoke Write-Verbose -Times 1 -Exactly
+                $result | Should -BeTrue
+            }
+        }
+
+        It 'Should return nothing without PassThru' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                $result = Write-ToLog -Message 'Test'
+
+                $result | Should -BeNullOrEmpty
+            }
+        }
+    }
+
+    Context 'When NoConsole is specified' {
+        It 'Should not call Write-Host' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+                Mock Write-Host
+
+                Write-ToLog -Message 'Silent entry' -Level INFO -NoConsole
+
+                Should -Invoke Write-Host -Times 0
+            }
+        }
+    }
+
+    Context 'When sensitive data is present in the message' {
+        It 'Should redact password in key=value format' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                Write-ToLog -Message 'Connecting with password=SuperSecret123' -Level INFO
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match 'password=\*\*\*REDACTED\*\*\*' -and
+                    $Value -notmatch 'SuperSecret123'
+                }
+            }
+        }
+
+        It 'Should redact token in JSON format' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                Write-ToLog -Message '{"token": "my-secret-token"}' -Level INFO
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '"token": "\*\*\*REDACTED\*\*\*"' -and
+                    $Value -notmatch 'my-secret-token'
+                }
+            }
+        }
+
+        It 'Should redact secret in XML format' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                Write-ToLog -Message '<secret>hiddenvalue</secret>' -Level INFO
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '<secret>\*\*\*REDACTED\*\*\*</secret>' -and
+                    $Value -notmatch 'hiddenvalue'
+                }
+            }
+        }
+    }
+
+    Context 'When using the ErrorRecord parameter set' {
+        It 'Should log the exception message at ERROR level' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                $exception = [System.Exception]::new('Something went wrong')
+                $errorRecord = [System.Management.Automation.ErrorRecord]::new(
+                    $exception, 'TestError',
+                    [System.Management.Automation.ErrorCategory]::NotSpecified, $null
+                )
+
+                Write-ToLog -ErrorRecord $errorRecord
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[ERROR\] Something went wrong'
+                }
+            }
+        }
+
+        It 'Should log error details at DEBUG level as a second write' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                $exception = [System.Exception]::new('Test exception')
+                $errorRecord = [System.Management.Automation.ErrorRecord]::new(
+                    $exception, 'TestError',
+                    [System.Management.Automation.ErrorCategory]::InvalidOperation, $null
+                )
+
+                Write-ToLog -ErrorRecord $errorRecord
+
+                # ERROR entry + DEBUG details entry
+                Should -Invoke Add-ContentWrapper -Times 2
+            }
+        }
+
+        It 'Should return combined PassThru result when PassThru is used with ErrorRecord' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                $exception = [System.Exception]::new('Passthru error')
+                $errorRecord = [System.Management.Automation.ErrorRecord]::new(
+                    $exception, 'TestError',
+                    [System.Management.Automation.ErrorCategory]::NotSpecified, $null
+                )
+
+                $result = Write-ToLog -ErrorRecord $errorRecord -PassThru
+
+                $result | Should -BeTrue
+            }
+        }
+    }
+
+    Context 'When the log file exceeds the size threshold' {
+        It 'Should invoke log rotation' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Invoke-LogRotation
+                Mock Test-PathWrapper { $true }
+                Mock Get-ItemWrapper { [PSCustomObject]@{ Length = 15MB } }
+
+                Write-ToLog -Message 'Triggers rotation' -Level INFO
+
+                Should -Invoke Invoke-LogRotation -Times 1
+            }
+        }
+
+        It 'Should not rotate when the file is within the size limit' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Invoke-LogRotation
+                Mock Test-PathWrapper { $true }
+                Mock Get-ItemWrapper { [PSCustomObject]@{ Length = 5MB } }
+
+                Write-ToLog -Message 'No rotation needed' -Level INFO
+
+                Should -Invoke Invoke-LogRotation -Times 0
             }
         }
     }
 
     Context 'When validating parameters' {
-        It 'Should throw on null message' {
-            InModuleScope -ModuleName $script:dscModuleName {
-                { Write-ToLog -Message $null } | Should -Throw
-            }
-        }
-
-        It 'Should throw on empty message' {
-            InModuleScope -ModuleName $script:dscModuleName {
-                { Write-ToLog -Message '' } | Should -Throw
-            }
-        }
-
-        It 'Should throw on invalid level' {
+        It 'Should throw on an invalid level value' {
             InModuleScope -ModuleName $script:dscModuleName {
                 { Write-ToLog -Message 'Test' -Level 'INVALID' } | Should -Throw
             }

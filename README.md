@@ -80,7 +80,13 @@ Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` 
 │   │   └── Export-Greeting.ps1           # Example state-changing function
 │   └── Private/                          # Internal helpers (one per file)
 │       ├── Format-GreetingMessage.ps1    # Example private function
-│       └── Write-ToLog.ps1              # Thin logging wrapper
+│       ├── Write-ToLog.ps1              # Thread-safe logger (core entry point)
+│       ├── Clear-Logfile.ps1            # Clears the active log (archive option)
+│       ├── Get-LogFilePath.ps1          # Returns current log file path
+│       ├── Get-LogFileSize.ps1          # Returns log file size in bytes
+│       ├── Invoke-LogRotation.ps1       # Rotates numbered log backups
+│       ├── Set-LogFilePath.ps1          # Sets the module-scoped log path
+│       └── Write-ErroLog.ps1            # ErrorRecord convenience wrapper
 ├── tests/
 │   ├── QA/
 │   │   └── module.tests.ps1              # ScriptAnalyzer, changelog, help tests
@@ -90,7 +96,13 @@ Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` 
 │       │   └── Export-Greeting.tests.ps1
 │       └── Private/
 │           ├── Format-GreetingMessage.tests.ps1
-│           └── Write-ToLog.tests.ps1
+│           ├── Write-ToLog.tests.ps1
+│           ├── Clear-LogFile.tests.ps1
+│           ├── Get-LogFilePath.tests.ps1
+│           ├── Get-LogFileSize.tests.ps1
+│           ├── Invoke-LogRotation.tests.ps1
+│           ├── Set-LogFilePath.tests.ps1
+│           └── Write-ErrorLog.tests.ps1
 ├── azure-pipelines.yml                   # Azure Pipelines (multi-platform, PSGallery deploy)
 ├── build.ps1                             # Sampler build bootstrap
 ├── build.yaml                            # Sampler build configuration
@@ -120,11 +132,24 @@ Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` 
 - `-Force` to overwrite, `-Append` to add to existing files
 - `-PassThru` returning `[System.IO.FileInfo]`
 
-### Write-ToLog (Logging)
+### Logging Framework (Private)
 
-- Thin wrapper mapping log levels to native PowerShell streams
-- INFO/DEBUG -> `Write-Verbose`, WARN -> `Write-Warning`, ERROR -> `Write-Error`, SUCCESS -> `Write-Information`
-- Optional `-LogPath` parameter for file logging
+Seven private functions form a production-grade, thread-safe logging system:
+
+| Function | Purpose |
+|----------|---------|
+| `Write-ToLog` | Core entry point. Writes timestamped entries to `$script:LogFile` under a named mutex. Supports INFO, DEBUG, WARN, ERROR, SUCCESS levels. Redacts sensitive values. ANSI colour console output with PSStyle fallback. |
+| `Clear-LogFile` | Clears the active log. `ConfirmImpact=High` — prompts unless `-Force`. `-Archive` copies a timestamped `.bak` before clearing. |
+| `Get-LogFilePath` | Returns the current module-scoped log file path for inspection or external use. |
+| `Get-LogFileSize` | Returns the log file size in bytes; returns `0` if the file does not yet exist. |
+| `Invoke-LogRotation` | Shifts numbered backups up (`.5` removed, `.4→.5`, …, current→`.1`). Called inside the `Write-ToLog` mutex — not for direct use. |
+| `Set-LogFilePath` | Sets `$script:LogFile` (and `$Global:LogFile` for backward compatibility) to an absolute path. `-Force` creates the directory. |
+| `Write-ErrorLog` | Convenience wrapper for `[ErrorRecord]` objects. Logs the message at ERROR; exception type, category, location, and inner exception at DEBUG. `-IncludeStackTrace` appends the PowerShell script stack trace. |
+
+**Key design choices:**
+- All file I/O calls go through thin wrapper functions (`Add-ContentWrapper`, `Test-PathWrapper`, etc.) so Pester can mock them without touching the filesystem.
+- Auto-rotation at 10 MB keeps up to 5 numbered backups.
+- Sensitive data (passwords, tokens, keys, secrets) is redacted in key=value, JSON, and XML formats before any write.
 
 ## CI/CD Setup
 
