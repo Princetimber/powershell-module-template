@@ -354,6 +354,84 @@ try {
         }
     }
 
+    # Remove Format-GreetingMessage example files and all references
+    Write-Host ""
+    Write-ColorMessage "Removing Format-GreetingMessage example files and references..." -Type Info
+
+    $exampleFilesToRemove = @(
+        (Join-Path -Path $templateRoot -ChildPath 'source/Private/Format-GreetingMessage.ps1'),
+        (Join-Path -Path $templateRoot -ChildPath 'tests/Unit/Private/Format-GreetingMessage.tests.ps1')
+    )
+
+    foreach ($filePath in $exampleFilesToRemove) {
+        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, "Remove example file")) {
+            Remove-Item -Path $filePath -Force -ErrorAction Stop
+            Write-Host "  Removed: $(Split-Path $filePath -Leaf)" -ForegroundColor Gray
+        }
+    }
+
+    # Inline Format-GreetingMessage logic into Get-Greeting.ps1 and remove all references
+    $getGreetingPath = Join-Path -Path $templateRoot -ChildPath 'source/Public/Get-Greeting.ps1'
+    if ((Test-Path $getGreetingPath) -and $PSCmdlet.ShouldProcess($getGreetingPath, "Remove Format-GreetingMessage references")) {
+        $content = (Get-Content -Path $getGreetingPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+
+        $content = $content.Replace(
+            "`n`n        The function delegates message formatting to the private helper`n        Format-GreetingMessage and logs all operations.",
+            ''
+        )
+
+        $inlinedGreeting = @'
+        $trimmedName = $Name.Trim()
+        $greeting = switch ($Style) {
+            'Formal'       { "Good day, $trimmedName." }
+            'Casual'       { "Hey $trimmedName!" }
+            'Professional' { "Hello $trimmedName, welcome." }
+        }
+'@
+
+        $content = $content.Replace(
+            '        $greeting = Format-GreetingMessage -Name $Name -Style $Style',
+            $inlinedGreeting
+        )
+
+        Set-Content -Path $getGreetingPath -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: Get-Greeting.ps1" -ForegroundColor Gray
+    }
+
+    # Remove Format-GreetingMessage from about help file
+    $helpFile = Get-ChildItem -Path (Join-Path -Path $templateRoot -ChildPath 'source/en-US') `
+        -Filter 'about_*.help.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, "Remove Format-GreetingMessage reference")) {
+        $content = (Get-Content -Path $helpFile.FullName -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+        $content = $content.Replace("`n    Format-GreetingMessage", '')
+        Set-Content -Path $helpFile.FullName -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: $($helpFile.Name)" -ForegroundColor Gray
+    }
+
+    # Remove Format-GreetingMessage entries from README.md directory listing
+    $readmePath = Join-Path -Path $templateRoot -ChildPath 'README.md'
+    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, "Remove Format-GreetingMessage references")) {
+        $content = (Get-Content -Path $readmePath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+        $content = $content.Replace("`n│       ├── Format-GreetingMessage.ps1    # Example private function", '')
+        $content = $content.Replace("`n│           ├── Format-GreetingMessage.tests.ps1", '')
+        Set-Content -Path $readmePath -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: README.md" -ForegroundColor Gray
+    }
+
+    # Remove Format-GreetingMessage entry from CHANGELOG.md
+    $changelogPath = Join-Path -Path $templateRoot -ChildPath 'CHANGELOG.md'
+    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, "Remove Format-GreetingMessage reference")) {
+        $content = (Get-Content -Path $changelogPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
+        $content = $content.Replace(
+            "`n- Replaced AllowEmptyString with ValidateNotNullOrEmpty and ValidatePattern on`n  Format-GreetingMessage Name parameter.",
+            ''
+        )
+        Set-Content -Path $changelogPath -Value $content -NoNewline -ErrorAction Stop
+        Write-Host "  Updated: CHANGELOG.md" -ForegroundColor Gray
+    }
+
+    Write-ColorMessage "Format-GreetingMessage cleanup complete." -Type Success
+
     # Verify no placeholders remain
     Write-Host ""
     Write-ColorMessage "Verifying all placeholders were replaced..." -Type Info
