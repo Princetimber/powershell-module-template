@@ -384,7 +384,7 @@ try {
     if ($Publish) {
         $publishTask = if ($Publish -eq 'PSGallery') { 'publish_psgallery' } else { 'publish_github' }
         Write-Host ""
-        Write-Host "To publish your module to $Publish:" -ForegroundColor Cyan
+        Write-Host "To publish your module to ${Publish}:" -ForegroundColor Cyan
         Write-Host "  . ./secrets.local.ps1                      # load credentials" -ForegroundColor Gray
         Write-Host "  ./build.ps1 -tasks build                   # build the module" -ForegroundColor Gray
         Write-Host "  ./build.ps1 -tasks $publishTask" -ForegroundColor Gray
