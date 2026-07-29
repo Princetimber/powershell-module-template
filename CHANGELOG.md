@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Restricted the opencode GitHub Actions workflow to trusted commenters (repo
+  owner, org members, invited collaborators). Previously any user could comment
+  `/oc` on a public issue or PR to run the agent with `ANTHROPIC_API_KEY` and an
+  OIDC token in scope. Also pinned the third-party opencode action to an immutable
+  release commit (v1.18.9) instead of the mutable `@latest` branch.
+
 ### Fixed
 
 - Enabled PSResourceGet so the NuGet version ranges in RequiredModules.psd1 resolve
