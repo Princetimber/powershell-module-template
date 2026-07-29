@@ -16,7 +16,7 @@ ModuleVersion = '0.0.1'
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '{{MODULE_GUID}}'
+GUID = '1280d118-667c-4c18-a07e-dbd824f40568'
 
 # Author of this module
 Author = '{{AUTHOR}}'
