@@ -257,7 +257,6 @@ try {
         '{{MODULE_DESCRIPTION}}' = $Description
         '{{AUTHOR}}'             = $Author
         '{{COMPANY}}'            = $Company
-        '{{MODULE_GUID}}'        = $ModuleGuid
         'TemplateModule'         = $ModuleName
     }
     
@@ -289,6 +288,17 @@ try {
     
     Write-ColorMessage "Updated $updatedCount files." -Type Success
     
+    # Assign a unique GUID to the module manifest. The template ships a fixed GUID so
+    # the raw, un-initialized template is a valid buildable module (green CI); replace
+    # it here so every initialized module gets its own identity.
+    $manifestPath = Join-Path -Path $templateRoot -ChildPath 'source/TemplateModule.psd1'
+    if ((Test-Path $manifestPath) -and $PSCmdlet.ShouldProcess($manifestPath, "Set module GUID to $ModuleGuid")) {
+        $manifestContent = Get-Content -Path $manifestPath -Raw -ErrorAction Stop
+        $manifestContent = $manifestContent -replace "(?m)^GUID\s*=\s*'[^']*'", ("GUID = '{0}'" -f $ModuleGuid)
+        Set-Content -Path $manifestPath -Value $manifestContent -NoNewline -ErrorAction Stop
+        Write-Host "  Set module GUID: $ModuleGuid" -ForegroundColor Gray
+    }
+
     # Rename TemplateModule files
     Write-Host ""
     Write-ColorMessage "Renaming TemplateModule files to $ModuleName..." -Type Info
@@ -298,8 +308,7 @@ try {
     
     foreach ($file in $filesToRename) {
         $newName = $file.Name -replace 'TemplateModule', $ModuleName
-        $newPath = Join-Path -Path $file.DirectoryName -ChildPath $newName
-        
+
         if ($PSCmdlet.ShouldProcess($file.FullName, "Rename to $newName")) {
             Rename-Item -Path $file.FullName -NewName $newName -ErrorAction Stop
             Write-Host "  Renamed: $($file.Name) → $newName" -ForegroundColor Gray
