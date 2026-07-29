@@ -8,11 +8,17 @@ on:
 
 jobs:
   opencode:
-    if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+    # Only trusted users (repo owner, org members, or invited collaborators) may
+    # trigger the agent. Without this gate, on a public repo ANY commenter could
+    # run it with ANTHROPIC_API_KEY and an OIDC token in scope.
+    if: >
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (startsWith(github.event.comment.body, '/oc') ||
+       startsWith(github.event.comment.body, '/opencode') ||
+       contains(github.event.comment.body, ' /oc') ||
+       contains(github.event.comment.body, ' /opencode'))
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -26,7 +32,10 @@ jobs:
           persist-credentials: false
 
       - name: Run opencode
-        uses: anomalyco/opencode/github@latest
+        # Pinned to an immutable release commit (was @latest, a moving branch) — this
+        # third-party action receives ANTHROPIC_API_KEY and an OIDC token, so a mutable
+        # ref is a supply-chain risk. Bump this SHA to adopt newer opencode releases.
+        uses: anomalyco/opencode/github@4da7bb44c84e013fa53e9c5d02ac753d1435c81a # v1.18.9
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
