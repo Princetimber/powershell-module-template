@@ -19,4 +19,11 @@
     ChangelogManagement         = '[3.0,4.0)'
     Sampler                     = '[0.118,1.0)'
     'Sampler.GitHubTasks'       = '[0.4.1,1.0)'
+
+    # Transitive build dependencies, declared explicitly so a clean-machine
+    # resolve saves them (the resolver does not always pull them automatically).
+    Configuration               = '[1.6.0,2.0)'  # required by ModuleBuilder
+    Metadata                    = '[1.5.7,2.0)'  # required by Configuration
+    Plaster                     = '[2.1.3,3.0)'  # required by Sampler
+    PowerShellForGitHub         = '[0.17.0,1.0)' # required by Sampler.GitHubTasks
 }
