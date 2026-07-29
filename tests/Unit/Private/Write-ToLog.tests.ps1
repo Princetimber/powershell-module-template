@@ -219,6 +219,34 @@ Describe 'Write-ToLog' -Tag 'Unit' {
                 }
             }
         }
+
+        It 'Should redact an unquoted key: value pair' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                Write-ToLog -Message 'Using password: SuperSecret123' -Level INFO
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match 'password: \*\*\*REDACTED\*\*\*' -and
+                    $Value -notmatch 'SuperSecret123'
+                }
+            }
+        }
+
+        It 'Should redact a Bearer token' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                Write-ToLog -Message 'Authorization: Bearer eyJhbGciOiJInotarealtoken' -Level INFO
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match 'Bearer \*\*\*REDACTED\*\*\*' -and
+                    $Value -notmatch 'eyJhbGciOiJInotarealtoken'
+                }
+            }
+        }
     }
 
     Context 'When using the ErrorRecord parameter set' {

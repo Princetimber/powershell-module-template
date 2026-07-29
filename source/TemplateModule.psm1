@@ -7,26 +7,15 @@
     Do not add runtime logic here that you expect to survive the build.
 #>
 
+# Dot-source private functions. Import must fail if any source file is invalid.
+$privateFunctions = Get-ChildItem -Path $PSScriptRoot\Private\*.ps1 -Recurse
+foreach ($function in $privateFunctions) {
+    . $function.FullName
+}
 
-   # dot-Source Private functions
- $PrivateFunctions = Get-ChildItem -Path $PSScriptRoot\Private\*.ps1 -Recurse
- foreach ($function in $PrivateFunctions) {
-     try {
-        . $function.FullName
-     }
-     catch {
-        Write-Warning "Failed to dot-source private function file: $($function.FullName). Error: $($_.Exception.Message)"
-     }
- }
-
-   # dot-Source Public functions
- $PublicFunctions = Get-ChildItem -Path $PSScriptRoot\Public\*.ps1 -Recurse
- foreach ($function in $PublicFunctions) {
-     try {
-        . $function.FullName
-        Export-ModuleMember -Function $function.BaseName
-     }
-     catch {
-        Write-Warning "Failed to dot-source public function file: $($function.FullName). Error: $($_.Exception.Message)"
-     }
- }
+# Dot-source and export public functions.
+$publicFunctions = Get-ChildItem -Path $PSScriptRoot\Public\*.ps1 -Recurse
+foreach ($function in $publicFunctions) {
+    . $function.FullName
+    Export-ModuleMember -Function $function.BaseName
+}

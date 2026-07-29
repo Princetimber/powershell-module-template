@@ -81,12 +81,12 @@ Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` 
 │   └── Private/                          # Internal helpers (one per file)
 │       ├── Format-GreetingMessage.ps1    # Example private function
 │       ├── Write-ToLog.ps1              # Thread-safe logger (core entry point)
-│       ├── Clear-Logfile.ps1            # Clears the active log (archive option)
+│       ├── Clear-LogFile.ps1            # Clears the active log (archive option)
 │       ├── Get-LogFilePath.ps1          # Returns current log file path
 │       ├── Get-LogFileSize.ps1          # Returns log file size in bytes
 │       ├── Invoke-LogRotation.ps1       # Rotates numbered log backups
 │       ├── Set-LogFilePath.ps1          # Sets the module-scoped log path
-│       └── Write-ErroLog.ps1            # ErrorRecord convenience wrapper
+│       └── Write-ErrorLog.ps1           # ErrorRecord convenience wrapper
 ├── tests/
 │   ├── QA/
 │   │   └── module.tests.ps1              # ScriptAnalyzer, changelog, help tests

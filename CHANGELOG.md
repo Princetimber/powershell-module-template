@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comment-based help. The QA ScriptAnalyzer check now honours PSScriptAnalyzerSettings.psd1.
 - Hardened the ModuleFast dependency bootstrap to fetch over HTTPS with an
   HTML-interstitial and byte-decoding guard before executing the script.
+- Corrected release pipelines to invoke the defined `publish_psgallery` workflow.
+- Made template token replacement literal and escaped apostrophes in generated
+  single-quoted secret assignments.
+- Made source module imports fail fast when a private or public script cannot load.
+- Corrected private script filenames to match their function names exactly.
+- Replaced copied logging identifiers with template-specific file and mutex names.
+- Made the Initialize-Template `.git`/`output` exclusions cross-platform; the previous
+  backslash-only globs never matched on macOS/Linux, so those paths were not excluded.
+- Extended Write-ToLog secret redaction to also cover Bearer tokens and unquoted
+  `key: value` pairs (in addition to the existing key=value, JSON, and XML forms).
 
 ### Added
 
@@ -40,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Get-LogFileSize private function — returns the current log file size in bytes;
   returns 0 if the log file does not yet exist.
 - Invoke-LogRotation private function — rotates log files by shifting numbered
-  backups up (log.4 removed, log.3 → log.4, …, log → log.1). Called inside the
+  backups up (log.5 removed, log.4 shifted to log.5, continuing through log to
+  log.1). Called inside the
   Write-ToLog mutex; not intended for direct use.
 - Set-LogFilePath private function — sets the module-scoped log file path with
   absolute-path validation; -Force creates the destination directory on demand.
@@ -56,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to `Invoke-ScriptAnalyzer`, ensuring the project-local ruleset is applied on every file edit
   inside Claude Code.
 - Rebuilt Write-ToLog as a production-grade, thread-safe logging framework:
-  - Named mutex (Global\Invoke-ADDSDomainControllerLog) prevents concurrent write
+  - Named mutex (Global\TemplateModuleLog) prevents concurrent write
     corruption across threads and runspaces.
   - Auto-rotates at 10 MB, keeping up to 5 numbered backup files.
   - Redacts passwords, tokens, keys, and secrets in key=value, JSON, and XML/HTML
