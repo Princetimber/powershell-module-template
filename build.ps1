@@ -477,6 +477,14 @@ begin {
 
         Write-Host -Object "[build] Starting build with InvokeBuild." -ForegroundColor Green
 
+        # Remove the ProgressAction common parameter before splatting into Invoke-Build.
+        # On PowerShell 7.4+ the built-in ProgressAction collides with the same parameter
+        # exposed by older InvokeBuild versions, throwing "A parameter with the name
+        # 'ProgressAction' was defined multiple times." (Invoke-Build #183).
+        if ($PSBoundParameters.ContainsKey('ProgressAction')) {
+            $null = $PSBoundParameters.Remove('ProgressAction')
+        }
+
         Invoke-Build @PSBoundParameters -Task $Tasks -File $MyInvocation.MyCommand.Path
 
         Pop-Location -StackName 'BuildModule'

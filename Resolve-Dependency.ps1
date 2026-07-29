@@ -249,16 +249,66 @@ if ($UseModuleFast -and -not (Get-Module -Name 'ModuleFast'))
             Write-Information -MessageData 'ModuleFast is configured to use latest released version.' -InformationAction 'Continue'
         }
 
-        $moduleFastBootstrapUri = 'bit.ly/modulefast' # cSpell: disable-line
+        <#
+            Fetch the ModuleFast bootstrap script over HTTPS with integrity guards
+            before compiling and executing it. The stock Sampler template uses the
+            schemeless shortlink 'bit.ly/modulefast', which defaults to HTTP and is
+            therefore susceptible to on-path tampering that would inject arbitrary code
+            into [ScriptBlock]::Create below. Prefer the canonical raw GitHub URL over
+            TLS, fall back to the HTTPS shortlink, decode byte[] bodies (Windows
+            PowerShell returns bytes) to UTF-8, and refuse to execute an HTML
+            interstitial instead of a script.
+        #>
+        $moduleFastBootstrapUris = @(
+            'https://raw.githubusercontent.com/JustinGrote/ModuleFast/main/ModuleFast.ps1'
+            'https://bit.ly/modulefast' # cSpell: disable-line
+        )
 
-        Write-Debug -Message ('Using bootstrap script at {0}' -f $moduleFastBootstrapUri)
+        $moduleFastBootstrapScript = $null
+        $moduleFastBootstrapErrors = @()
 
-        $invokeWebRequestParameters = @{
-            Uri         = $moduleFastBootstrapUri
-            ErrorAction = 'Stop'
+        foreach ($moduleFastBootstrapCandidateUri in $moduleFastBootstrapUris)
+        {
+            try
+            {
+                Write-Debug -Message ('Using bootstrap script at {0}' -f $moduleFastBootstrapCandidateUri)
+
+                $invokeWebRequestParameters = @{
+                    Uri             = $moduleFastBootstrapCandidateUri
+                    UseBasicParsing = $true
+                    ErrorAction     = 'Stop'
+                }
+
+                $moduleFastBootstrapResponse = Invoke-WebRequest @invokeWebRequestParameters
+
+                $moduleFastBootstrapBody = if ($moduleFastBootstrapResponse.Content -is [byte[]])
+                {
+                    [System.Text.Encoding]::UTF8.GetString($moduleFastBootstrapResponse.Content)
+                }
+                else
+                {
+                    [System.String] $moduleFastBootstrapResponse.Content
+                }
+
+                if ($moduleFastBootstrapBody -match '<html|<!DOCTYPE')
+                {
+                    throw ('Bootstrap URI {0} returned an HTML interstitial instead of a script.' -f $moduleFastBootstrapCandidateUri)
+                }
+
+                $moduleFastBootstrapScript = $moduleFastBootstrapBody
+
+                break
+            }
+            catch
+            {
+                $moduleFastBootstrapErrors += ('{0}: {1}' -f $moduleFastBootstrapCandidateUri, $_.Exception.Message)
+            }
         }
 
-        $moduleFastBootstrapScript = Invoke-WebRequest @invokeWebRequestParameters
+        if (-not $moduleFastBootstrapScript)
+        {
+            throw ('All ModuleFast bootstrap URIs failed. {0}' -f ($moduleFastBootstrapErrors -join '; '))
+        }
 
         $moduleFastBootstrapScriptBlock = [ScriptBlock]::Create($moduleFastBootstrapScript)
 
@@ -835,9 +885,17 @@ try
                         else
                         {
                             # Handle different nuget version operators already present.
-                            if ($requiredModule.Value -match '[!|:|[|(|,|>|<|=]')
+                            if ($requiredModule.Value -match '^[!:]')
                             {
+                                # Already separated (':[1.0,2.0)') or carries a prerelease suffix ('!').
                                 $modulesToSave += ('{0}{1}' -f $requiredModule.Name, $requiredModule.Value)
+                            }
+                            elseif ($requiredModule.Value -match '[\[\(,><=]')
+                            {
+                                # NuGet range / comparison expression. ModuleFast requires the
+                                # 'Name:expr' form; without the ':' it reads the whole string as
+                                # the package id and 404s (e.g. 'Sampler[0.118,1.0)').
+                                $modulesToSave += ('{0}:{1}' -f $requiredModule.Name, $requiredModule.Value)
                             }
                             else
                             {

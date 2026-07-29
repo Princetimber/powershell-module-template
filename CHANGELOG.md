@@ -5,6 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Enabled PSResourceGet so the NuGet version ranges in RequiredModules.psd1 resolve
+  on a clean machine (the legacy PowerShellGet path could not parse them), and
+  declared the transitive build dependencies (Configuration, Metadata, Plaster,
+  PowerShellForGitHub) so ModuleBuilder and the Sampler tasks import cleanly.
+- Shipped a valid module GUID in the source manifest so the un-initialized template
+  builds in CI; Initialize-Template regenerates a unique GUID on init.
+- Scoped the QA per-function help, unit-test, and ScriptAnalyzer checks to exported
+  (public) functions, matching the convention that private functions carry no
+  comment-based help. The QA ScriptAnalyzer check now honours PSScriptAnalyzerSettings.psd1.
+- Hardened the ModuleFast dependency bootstrap to fetch over HTTPS with an
+  HTML-interstitial and byte-decoding guard before executing the script.
+
 ### Added
 
 - Export-Greeting public function demonstrating correct ShouldProcess usage for

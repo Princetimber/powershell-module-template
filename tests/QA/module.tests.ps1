@@ -57,6 +57,9 @@ BeforeAll {
                 )
             }
     ).Directory.FullName
+
+    # Repo-root ScriptAnalyzer settings (excludes the Windows-legacy BOM rule).
+    $script:pssaSettingsPath = Join-Path -Path $projectPath -ChildPath 'PSScriptAnalyzerSettings.psd1'
 }
 
 Describe 'Changelog Management' -Tag 'Changelog' {
@@ -115,8 +118,12 @@ Describe 'General module control' -Tags 'FunctionalQuality' {
 }
 
 BeforeDiscovery {
-    # Must use the imported module to build test cases.
-    $allModuleFunctions = & $script:mut { Get-Command -Module $args[0] -CommandType Function } $script:moduleName
+    # Only the module's EXPORTED (public) functions are subject to the per-function
+    # quality gates below. Private helpers and nested wrapper functions are excluded
+    # by design: per project convention private functions must NOT carry comment-based
+    # help, and wrappers are internal implementation details. Private code is still
+    # covered by the recursive ScriptAnalyzer lint job and its own unit tests.
+    $allModuleFunctions = $script:mut.ExportedFunctions.Values
 
     # Build test cases.
     $testCases = @()
@@ -155,7 +162,17 @@ Describe 'Quality for module' -Tags 'TestQuality' {
     It 'Should pass Script Analyzer for <Name>' -ForEach $testCases -Skip:(-not $script:scriptAnalyzerRules) {
         $functionFile = Get-ChildItem -Path $script:sourcePath -Recurse -Include "$Name.ps1"
 
-        $pssaResult = (Invoke-ScriptAnalyzer -Path $functionFile.FullName)
+        $invokeScriptAnalyzerParameters = @{
+            Path = $functionFile.FullName
+        }
+
+        # Apply the repo settings file (per project convention) when it is present.
+        if ($script:pssaSettingsPath -and (Test-Path -Path $script:pssaSettingsPath))
+        {
+            $invokeScriptAnalyzerParameters['Settings'] = $script:pssaSettingsPath
+        }
+
+        $pssaResult = Invoke-ScriptAnalyzer @invokeScriptAnalyzerParameters
         $report = $pssaResult | Format-Table -AutoSize | Out-String -Width 110
         $pssaResult | Should -BeNullOrEmpty -Because `
             "some rule triggered.`r`n`r`n $report"
