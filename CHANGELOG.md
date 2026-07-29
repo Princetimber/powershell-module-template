@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated `.claude/settings.json` PostToolUse hook to pass `-Settings PSScriptAnalyzerSettings.psd1`
+  to `Invoke-ScriptAnalyzer`, ensuring the project-local ruleset is applied on every file edit
+  inside Claude Code.
 - Rebuilt Write-ToLog as a production-grade, thread-safe logging framework:
   - Named mutex (Global\Invoke-ADDSDomainControllerLog) prevents concurrent write
     corruption across threads and runspaces.
