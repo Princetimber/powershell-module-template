@@ -263,7 +263,7 @@ try {
     # Get all text files (exclude binary files and git folder)
     $textExtensions = @('*.ps1', '*.psm1', '*.psd1', '*.md', '*.txt', '*.yml', '*.yaml', '*.json')
     $filesToUpdate = Get-ChildItem -Path $templateRoot -Recurse -File -Include $textExtensions |
-        Where-Object { $_.FullName -notlike '*\.git\*' -and $_.FullName -notlike '*\output\*' }
+        Where-Object { $_.FullName -notmatch '[\\/](\.git|output)[\\/]' }
     
     Write-Host ""
     Write-ColorMessage "Updating $($filesToUpdate.Count) files..." -Type Info
@@ -274,8 +274,10 @@ try {
             $content = Get-Content -Path $file.FullName -Raw -ErrorAction Stop
             $originalContent = $content
             
-            foreach ($key in $replacements.Keys) {
-                $content = $content -replace [regex]::Escape($key), $replacements[$key]
+            if ($null -ne $content) {
+                foreach ($key in $replacements.Keys) {
+                    $content = $content.Replace($key, $replacements[$key])
+                }
             }
             
             if ($content -ne $originalContent) {
@@ -304,7 +306,7 @@ try {
     Write-ColorMessage "Renaming TemplateModule files to $ModuleName..." -Type Info
     
     $filesToRename = Get-ChildItem -Path $templateRoot -Recurse -File |
-        Where-Object { $_.Name -like '*TemplateModule*' -and $_.FullName -notlike '*\.git\*' }
+        Where-Object { $_.Name -like '*TemplateModule*' -and $_.FullName -notmatch '[\\/]\.git[\\/]' }
     
     foreach ($file in $filesToRename) {
         $newName = $file.Name -replace 'TemplateModule', $ModuleName
@@ -341,7 +343,8 @@ try {
                     }
                 } while (-not $GalleryApiKey)
             }
-            $secretsLines += "`$env:PSGALLERY_API_KEY = '$GalleryApiKey'"
+            $escapedGalleryApiKey = $GalleryApiKey.Replace("'", "''")
+            $secretsLines += "`$env:PSGALLERY_API_KEY = '$escapedGalleryApiKey'"
         }
         elseif ($Publish -eq 'GitHub') {
             if (-not $GitHubToken) {
@@ -352,7 +355,8 @@ try {
                     }
                 } while (-not $GitHubToken)
             }
-            $secretsLines += "`$env:GITHUB_TOKEN = '$GitHubToken'"
+            $escapedGitHubToken = $GitHubToken.Replace("'", "''")
+            $secretsLines += "`$env:GITHUB_TOKEN = '$escapedGitHubToken'"
         }
 
         $secretsDest = Join-Path -Path $templateRoot -ChildPath 'secrets.local.ps1'
@@ -565,7 +569,7 @@ try {
     Write-ColorMessage "Verifying all placeholders were replaced..." -Type Info
     
     $remainingPlaceholders = Get-ChildItem -Path $templateRoot -Recurse -File -Include $textExtensions |
-        Where-Object { $_.FullName -notlike '*\.git\*' -and $_.FullName -notlike '*\output\*' } |
+        Where-Object { $_.FullName -notmatch '[\\/](\.git|output)[\\/]' } |
         Select-String -Pattern '\{\{[A-Z_]+\}\}' -SimpleMatch:$false
     
     if ($remainingPlaceholders) {

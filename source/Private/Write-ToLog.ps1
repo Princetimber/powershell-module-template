@@ -3,7 +3,7 @@
 # Timestamp format used for log file names and archives (shared with Clear-LogFile)
 $script:LogTimestampFormat = 'yyyyMMdd_HHmmss'
 
-# Thread-safe, auto-rotating logger for Invoke-ADDSDomainController.
+# Thread-safe, auto-rotating logger for TemplateModule.
 # Entry point: Write-ToLog. Levels: INFO, DEBUG, WARN, ERROR, SUCCESS.
 
 # ============================================================================
@@ -21,7 +21,7 @@ function Initialize-LogFilePath {
     param()
 
     if (-not $Global:LogFile) {
-        $Global:LogFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "Invoke-ADDSDomainController_$([System.DateTimeOffset]::UtcNow.ToString($script:LogTimestampFormat)).log")
+        $Global:LogFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "TemplateModule_$([System.DateTimeOffset]::UtcNow.ToString($script:LogTimestampFormat)).log")
     }
     return $Global:LogFile
 }
@@ -114,7 +114,7 @@ function Write-ToLog {
 
         # Initialize mutex for thread safety (reuse existing if available)
         if (-not $script:LogMutex) {
-            $script:LogMutex = [System.Threading.Mutex]::new($false, 'Global\Invoke-ADDSDomainControllerLog')
+            $script:LogMutex = [System.Threading.Mutex]::new($false, 'Global\TemplateModuleLog')
         }
     }
 
@@ -167,6 +167,13 @@ Inner Exception: $($ErrorRecord.Exception.InnerException.Message)
 
         # Pattern 3: XML/HTML format - preserve closing tag
         $sanitizedMessage = $sanitizedMessage -replace '(?i)<(password|token|key|secret|apikey|api_key|access_key|auth)>[^<]*</(password|token|key|secret|apikey|api_key|access_key|auth)>', '<$1>***REDACTED***</$2>'
+
+        # Pattern 4: Bearer token (e.g. an Authorization header)
+        $sanitizedMessage = $sanitizedMessage -replace '(?i)\b(bearer)\s+\S+', '$1 ***REDACTED***'
+
+        # Pattern 5: unquoted 'key: value' form. The negative lookbehind/lookahead on a
+        # quote keep this from re-touching the quoted JSON form handled by Pattern 2.
+        $sanitizedMessage = $sanitizedMessage -replace '(?i)(?<![\"''])\b(password|token|key|secret|apikey|api_key|access_key|auth)\b\s*:\s*(?![\"''])\S+', '$1: ***REDACTED***'
 
         $timestamp = [System.DateTimeOffset]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss')
         $entry = "[$timestamp] [$Level] $sanitizedMessage"

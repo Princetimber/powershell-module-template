@@ -257,7 +257,7 @@ stages:
             displayName: 'Publish Release'
             inputs:
               filePath: './build.ps1'
-              arguments: '-tasks publish'
+              arguments: '-tasks publish_psgallery'
               pwsh: true
             env:
               GitHubToken: $(GitHubToken)
