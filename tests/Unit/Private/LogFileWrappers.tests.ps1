@@ -60,33 +60,6 @@ Describe 'Log file I/O wrappers' -Tag 'Unit' {
         }
     }
 
-    Context 'Copy-ItemWrapper' {
-        It 'Copies a file to the destination' {
-            InModuleScope -ModuleName $script:dscModuleName {
-                $src = Join-Path -Path $TestDrive -ChildPath 'copy-src.txt'
-                $dst = Join-Path -Path $TestDrive -ChildPath 'copy-dst.txt'
-                Set-Content -LiteralPath $src -Value 'data'
-
-                Copy-ItemWrapper -LiteralPath $src -Destination $dst
-
-                Get-Content -LiteralPath $dst | Should -Be 'data'
-            }
-        }
-    }
-
-    Context 'Clear-ContentWrapper' {
-        It 'Clears the content of a file' {
-            InModuleScope -ModuleName $script:dscModuleName {
-                $file = Join-Path -Path $TestDrive -ChildPath 'clear.txt'
-                Set-Content -LiteralPath $file -Value 'data'
-
-                Clear-ContentWrapper -LiteralPath $file
-
-                Get-Content -LiteralPath $file -Raw | Should -BeNullOrEmpty
-            }
-        }
-    }
-
     Context 'Move-ItemWrapper' {
         It 'Moves a file to the destination' {
             InModuleScope -ModuleName $script:dscModuleName {

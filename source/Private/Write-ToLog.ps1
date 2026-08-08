@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-# Timestamp format used for log file names and archives (shared with Clear-LogFile)
+# Timestamp format used for log file names and archives
 $script:LogTimestampFormat = 'yyyyMMdd_HHmmss'
 
 # Thread-safe, auto-rotating logger for TemplateModule.
