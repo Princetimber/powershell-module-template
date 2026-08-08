@@ -303,6 +303,30 @@ Describe 'Write-ToLog' -Tag 'Unit' {
                 $result | Should -BeTrue
             }
         }
+
+        It 'Should include invocation location and inner exception in the DEBUG details' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+
+                try {
+                    $inner = [System.Exception]::new('Root cause')
+                    $outer = [System.Exception]::new('Wrapper error', $inner)
+                    throw $outer
+                } catch {
+                    $realErrorRecord = $_
+                }
+
+                Write-ToLog -ErrorRecord $realErrorRecord
+
+                Should -Invoke Add-ContentWrapper -Times 1 -ParameterFilter {
+                    $Value -match '\[DEBUG\]' -and
+                    $Value -match 'Location:' -and
+                    $Value -match 'Command:' -and
+                    $Value -match 'Inner Exception: Root cause'
+                }
+            }
+        }
     }
 
     Context 'When the log file exceeds the size threshold' {
@@ -329,6 +353,73 @@ Describe 'Write-ToLog' -Tag 'Unit' {
                 Write-ToLog -Message 'No rotation needed' -Level INFO
 
                 Should -Invoke Invoke-LogRotation -Times 0
+            }
+        }
+
+        It 'Should warn and continue writing when rotation itself fails' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Invoke-LogRotation { throw 'Disk full' }
+                Mock Test-PathWrapper { $true }
+                Mock Get-ItemWrapper { [PSCustomObject]@{ Length = 15MB } }
+                Mock Write-Warning
+
+                Write-ToLog -Message 'Rotation fails but write continues' -Level INFO
+
+                Should -Invoke Write-Warning -Times 1 -ParameterFilter {
+                    $Message -match 'Log rotation failed'
+                }
+                Should -Invoke Add-ContentWrapper -Times 1
+            }
+        }
+    }
+
+    Context 'When the log directory cannot be created' {
+        It 'Should rethrow if the directory is still missing after an IOException' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                $script:LogDirectoryCreated = $false
+                Mock Test-PathWrapper { $false }
+                Mock New-ItemDirectoryWrapper { throw [System.IO.IOException]::new('Race condition') }
+
+                { Write-ToLog -Message 'Test' -Level INFO } | Should -Throw
+            }
+        }
+    }
+
+    Context 'When the log mutex cannot be acquired' {
+        It 'Should warn and skip the write without throwing' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper
+                Mock Test-PathWrapper { $false }
+                Mock Write-Warning
+
+                $fakeMutex = [PSCustomObject]@{}
+                $fakeMutex | Add-Member -MemberType ScriptMethod -Name WaitOne -Value { param($Timeout) $false }
+                $script:LogMutex = $fakeMutex
+
+                { Write-ToLog -Message 'Test' -Level INFO } | Should -Not -Throw
+
+                Should -Invoke Write-Warning -Times 1 -ParameterFilter {
+                    $Message -match 'Failed to acquire log mutex'
+                }
+                Should -Invoke Add-ContentWrapper -Times 0
+            }
+        }
+    }
+
+    Context 'When the log write itself fails' {
+        It 'Should warn and return $false via PassThru' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Add-ContentWrapper { throw 'Access denied' }
+                Mock Test-PathWrapper { $false }
+                Mock Write-Warning
+
+                $result = Write-ToLog -Message 'Test' -Level INFO -PassThru
+
+                $result | Should -BeFalse
+                Should -Invoke Write-Warning -Times 1 -ParameterFilter {
+                    $Message -match 'Failed to write log entry'
+                }
             }
         }
     }

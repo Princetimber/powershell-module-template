@@ -125,6 +125,26 @@ Describe 'Invoke-LogRotation' -Tag 'Unit' {
         }
     }
 
+    Context 'When a rotation step fails' {
+        It 'Should warn and return without throwing' {
+            InModuleScope -ModuleName $script:dscModuleName {
+                Mock Test-PathWrapper -ParameterFilter {
+                    $LiteralPath -eq $script:LogFile
+                } { $true }
+                Mock Test-PathWrapper { $false }
+                Mock Move-ItemWrapper { throw [System.IO.IOException]::new('disk full') }
+                Mock Remove-ItemWrapper
+                Mock Write-Warning
+
+                { Invoke-LogRotation } | Should -Not -Throw
+
+                Should -Invoke Write-Warning -Times 1 -ParameterFilter {
+                    $Message -match 'Failed to rotate log file'
+                }
+            }
+        }
+    }
+
     Context 'When using -WhatIf' {
         It 'Should not move or remove any files' {
             InModuleScope -ModuleName $script:dscModuleName {
