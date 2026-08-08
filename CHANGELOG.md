@@ -5,6 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored a passing `main` build: the checked-in `output/` build artifact used
+  during local verification of the prior `Removed` change had gone stale before
+  `Write-ToLog`'s Bearer-token and unquoted `key: value` redaction patterns were
+  added, masking a real regression — removing the dead logging helpers' tests
+  also dropped code coverage below the 85% threshold. Added targeted Pester
+  coverage for previously-untested `Write-ToLog`/`Invoke-LogRotation` error
+  paths (mutex-acquire timeout, log-write failure, rotation failure, directory-
+  creation race, `ErrorRecord` invocation/inner-exception detail) and for
+  `Get-Greeting`'s `ThrowTerminatingError` branch, bringing coverage to ~94.5%.
+
 ### Removed
 
 - Removed `Write-ErrorLog`, `Get-LogFilePath`, `Get-LogFileSize`, `Set-LogFilePath`,

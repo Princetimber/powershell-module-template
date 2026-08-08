@@ -115,6 +115,14 @@ Describe 'Get-Greeting' -Tag 'Unit' {
         }
     }
 
+    Context 'When Format-GreetingMessage fails to produce a greeting' {
+        It 'Should throw a terminating error' {
+            Mock -ModuleName $script:dscModuleName -CommandName Format-GreetingMessage -MockWith { return $null }
+
+            { Get-Greeting -Name 'Alice' -ErrorAction Stop } | Should -Throw -ErrorId 'GreetingFormatFailed,Get-Greeting'
+        }
+    }
+
     Context 'When logging operations' {
         It 'Should call Write-ToLog during execution' {
             Get-Greeting -Name 'Alice'
