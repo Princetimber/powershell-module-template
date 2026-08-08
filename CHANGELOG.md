@@ -5,6 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed `Write-ErrorLog`, `Get-LogFilePath`, `Get-LogFileSize`, `Set-LogFilePath`,
+  and `Clear-LogFile` from `source/Private` along with their dedicated Pester
+  tests. None of these functions were ever called by the module's public or
+  private code — they existed only to be unit-tested, and `Write-ErrorLog`
+  duplicated logic already handled by `Write-ToLog`'s own `ErrorRecord`
+  parameter set. `Write-ToLog` (the module's standard logger) and
+  `Invoke-LogRotation` (invoked from within `Write-ToLog`) are unchanged.
+
 ### Security
 
 - Restricted the opencode GitHub Actions workflow to trusted commenters (repo
