@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Removed the broken project-level `PostToolUse` ScriptAnalyzer hook from
+  `.claude/settings.json`. The hook's `pwsh` script was wrapped in double
+  quotes while the hook itself runs via `sh -c "<command>"`, which expanded
+  `$files` and stripped the inner double quotes before `pwsh` ever parsed the
+  script, corrupting `if ($files)` into `if ()` and throwing a `ParserError`
+  on every `Edit`/`Write`. An equivalent, correctly single-quoted hook has
+  been configured at the user level instead, so linting on `.ps1`/`.psm1`
+  changes continues without the quoting bug or duplicate execution.
+
 - Restored a passing `main` build: the checked-in `output/` build artifact used
   during local verification of the prior `Removed` change had gone stale before
   `Write-ToLog`'s Bearer-token and unquoted `key: value` redaction patterns were
