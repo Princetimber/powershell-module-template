@@ -144,8 +144,7 @@ function Export-Greeting {
         if ($PSCmdlet.ShouldProcess($target, $action)) {
             if ($Append) {
                 Add-Content -LiteralPath $resolvedPath -Value $collectedGreetings -ErrorAction Stop
-            }
-            else {
+            } else {
                 Set-Content -LiteralPath $resolvedPath -Value $collectedGreetings -Force -ErrorAction Stop
             }
 

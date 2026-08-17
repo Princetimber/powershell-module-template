@@ -215,15 +215,19 @@
         }
 
         PSUseConsistentWhitespace                      = @{
-            Enable                          = $true
-            CheckOpenBrace                  = $true
-            CheckOpenParen                  = $true
-            CheckOperator                   = $true
-            CheckSeparator                  = $true
-            CheckPipe                       = $true
-            CheckPipeForRedundantWhitespace = $false
-            CheckInnerBrace                 = $true
-            CheckParameter                  = $false
+            Enable                                  = $true
+            CheckOpenBrace                          = $true
+            CheckOpenParen                          = $true
+            CheckOperator                           = $true
+            CheckSeparator                          = $true
+            CheckPipe                               = $true
+            CheckPipeForRedundantWhitespace         = $false
+            CheckInnerBrace                         = $true
+            CheckParameter                          = $false
+            IgnoreAssignmentOperatorInsideHashTable = $true
+            # Required so this rule doesn't fight PSAlignAssignmentStatement,
+            # which intentionally pads '=' with extra spaces to align
+            # hashtable/splat values.
         }
 
         PSAlignAssignmentStatement                     = @{

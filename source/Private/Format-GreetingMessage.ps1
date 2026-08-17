@@ -66,8 +66,8 @@ function Format-GreetingMessage {
     $trimmedName = $Name.Trim()
 
     $greeting = switch ($Style) {
-        'Formal'       { "Good day, $trimmedName." }
-        'Casual'       { "Hey $trimmedName!" }
+        'Formal' { "Good day, $trimmedName." }
+        'Casual' { "Hey $trimmedName!" }
         'Professional' { "Hello $trimmedName, welcome." }
     }
 

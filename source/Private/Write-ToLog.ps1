@@ -186,7 +186,7 @@ Inner Exception: $($ErrorRecord.Exception.InnerException.Message)
             try {
                 $mutexAcquired = $script:LogMutex.WaitOne(10000)  # 10-second timeout to prevent deadlock
                 if (-not $mutexAcquired) {
-                    Write-Warning "Failed to acquire log mutex within 10 seconds. Log entry may be lost."
+                    Write-Warning 'Failed to acquire log mutex within 10 seconds. Log entry may be lost.'
                     $success = $false
                     return
                 }

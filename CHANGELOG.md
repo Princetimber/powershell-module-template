@@ -5,6 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded `PSScriptAnalyzerSettings.psd1` from a minimal exclude-only config
+  to a comprehensive baseline ruleset covering security, `ShouldProcess`
+  enforcement, OTBS formatting, and comment-based help, targeting
+  PowerShell 7.4.
+
 ### Fixed
 
 - Removed the broken project-level `PostToolUse` ScriptAnalyzer hook from
