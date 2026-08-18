@@ -123,6 +123,6 @@ function Get-Greeting {
     }
 
     end {
-        Write-ToLog -Message "Get-Greeting completed" -Level INFO
+        Write-ToLog -Message 'Get-Greeting completed' -Level INFO
     }
 }
