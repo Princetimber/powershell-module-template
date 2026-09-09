@@ -64,7 +64,6 @@ Follow the patterns in `Get-Greeting.ps1` (read-only) and `Export-Greeting.ps1` 
 ```
 {{MODULE_NAME}}/
 ├── .github/
-│   ├── copilot-instructions.md           # GitHub Copilot instructions
 │   └── workflows/
 │       ├── ci.yml                        # GitHub Actions CI (multi-platform)
 │       └── release.yml                   # GitHub Actions release to PSGallery

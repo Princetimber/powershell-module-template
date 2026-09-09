@@ -157,5 +157,4 @@ Defined in `RequiredModules.psd1` (pinned version ranges):
 - Follow existing patterns before introducing new architecture.
 - Never assume access to live systems or production environments.
 - If requirements are unclear, ask rather than guess.
-- See `CLAUDE.md` for Claude Code-specific conventions and `.github/copilot-instructions.md`
-  for GitHub Copilot instructions.
+- See `CLAUDE.md` for Claude Code-specific conventions.

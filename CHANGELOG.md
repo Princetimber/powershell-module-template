@@ -101,6 +101,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Removed `.github/copilot-instructions.md` along with the references to it in
+  `README.md` (directory tree), `AGENTS.md`, and `CLAUDE.md` -- the latter's
+  `## Further Reference` section went with it, as that was its only entry. This
+  also clears the last stray `{{MODULE_NAME}}` placeholder that survived
+  `Initialize-Template.ps1`, since the token lived in that file.
+
 - Removed `Write-ErrorLog`, `Get-LogFilePath`, `Get-LogFileSize`, `Set-LogFilePath`,
   and `Clear-LogFile` from `source/Private` along with their dedicated Pester
   tests. None of these functions were ever called by the module's public or

@@ -153,7 +153,3 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse
 - Produce review-ready PowerShell: readable, testable, idempotent
 - Keep changes minimal; avoid drive-by refactors
 - If requirements are unclear, ask concise clarifying questions rather than guessing
-
-## Further Reference
-
-- `.github/copilot-instructions.md` — GitHub Copilot-specific instructions
