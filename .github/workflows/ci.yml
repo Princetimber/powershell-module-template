@@ -102,7 +102,25 @@ jobs:
           $failed = $false
 
           foreach ($ruleset in 'PSGallery', 'PSScriptAnalyzerSettings.psd1') {
-            $results = Invoke-ScriptAnalyzer -Path source/ -Recurse -Settings $ruleset
+            # PSScriptAnalyzer 1.25.0 intermittently throws NullReferenceException
+            # from inside Invoke-ScriptAnalyzer (upstream thread-safety bug; it
+            # reproduces with the default ruleset and no settings file). Retry that
+            # specific exception. -ErrorAction Stop matters: without it the crash is
+            # non-terminating, $results comes back short, and the job would report
+            # "0 issues" for files that were never actually analysed.
+            $results = $null
+
+            foreach ($attempt in 1..3) {
+              try {
+                $results = Invoke-ScriptAnalyzer -Path source/ -Recurse -Settings $ruleset -ErrorAction Stop
+                break
+              }
+              catch [System.NullReferenceException] {
+                if ($attempt -eq 3) { throw }
+                Write-Host "PSScriptAnalyzer threw NullReferenceException on attempt $attempt of 3 ($ruleset); retrying."
+              }
+            }
+
             if ($results) {
               Write-Host "ScriptAnalyzer ($ruleset): $($results.Count) issue(s)."
               $results | Format-Table -AutoSize

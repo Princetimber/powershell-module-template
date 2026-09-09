@@ -60,6 +60,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the QA `Should pass Script Analyzer for <Name>` test and the CI `lint`
+  job resilient to an upstream PSScriptAnalyzer 1.25.0 bug: `Invoke-ScriptAnalyzer`
+  intermittently throws `NullReferenceException` (it reproduces with the default
+  ruleset and no settings file, and the failure count varies across identical
+  runs). Both call sites now retry that specific exception up to three times and
+  rethrow afterwards. `-ErrorAction Stop` was added, which matters in its own
+  right: without it the crash was a *non-terminating* error, so `$pssaResult`
+  stayed `$null` and satisfied `Should -BeNullOrEmpty` -- the analyzer could
+  silently report "no findings" for a file it never analysed. Only
+  `NullReferenceException` is caught, so genuine analyzer failures and real rule
+  violations still fail. Verified by fault injection in both directions: a
+  first-attempt crash passes on retry, a persistent crash still fails.
+
 - `Initialize-Template.ps1` set the module GUID with a `(?m)^GUID\s*=` regex
   that assumed the manifest key started at column 0. Formatting the manifest
   to the baseline (above) indents and pads that key, which silently broke the
