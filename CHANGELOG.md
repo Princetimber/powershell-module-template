@@ -7,12 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Brought `Initialize-Template.ps1` to zero baseline ScriptAnalyzer findings
+  (was 153). 107 were fixed mechanically -- 71
+  `PSAvoidUsingDoubleQuotesForConstantString`, 31 `PSAvoidTrailingWhitespace`,
+  and 5 layout findings (`PSPlaceCloseBrace`, `PSUseConsistentWhitespace`,
+  `PSUseConsistentIndentation`). The remaining 46 are `PSAvoidUsingWriteHost`,
+  suppressed in this one file via `SuppressMessageAttribute` with a written
+  justification: the script is an interactive bootstrapper that prompts with
+  `Read-Host`, writes coloured status output for a human at a terminal, and
+  deletes itself on completion, so the rule's rationale ("invisible to capture,
+  redirection, and tests") does not apply. `PSAvoidUsingWriteHost` remains a
+  hard rule for module code in `PSScriptAnalyzerSettings.psd1` -- it was not
+  added to `ExcludeRules`. Verified by re-running the script end to end: the
+  GUID substitution, placeholder replacement, file renames, coloured output,
+  and self-removal all behave as before.
+
+- Pinned `Pester` to `[6.0,7.0)` in `RequiredModules.psd1`. The previous
+  `[5.6,6.0)` range explicitly excluded Pester 6, so a dependency resolve
+  could never pick up the current major version. Verified: the range resolves
+  to 6.1.0 on PSGallery, Sampler's Pester task requires only `>= 4.0` with no
+  upper bound, and the suite passes unchanged when run under Pester 6.1.0
+  (107 tests, 0 failures, 94.54% coverage).
+
+- Formatted `source/TemplateModule.psd1` and `RequiredModules.psd1` to the
+  baseline ruleset introduced in the change below. The stock
+  `New-ModuleManifest` layout left the module manifest with 97 violations
+  (`PSUseConsistentIndentation`, `PSAlignAssignmentStatement`,
+  `PSPlaceCloseBrace`) and `RequiredModules.psd1` with 11
+  (`PSAlignAssignmentStatement`). Both changes are whitespace-only; the
+  hashtables parse to identical keys and values.
+
+- The `lint` job in `.github/workflows/ci.yml` now runs the repo baseline
+  (`PSScriptAnalyzerSettings.psd1`) recursively over `source/` in addition to
+  the existing stricter `-Settings PSGallery` pass, and reports both before
+  failing. The QA suite only feeds exported function `.ps1` files to
+  ScriptAnalyzer, so nothing in CI had ever applied the baseline to the module
+  manifest, which is why the 97 violations above accumulated unnoticed.
+
+- The `lint` job's two ScriptAnalyzer passes were folded into a single step
+  that begins with `Import-Module PSScriptAnalyzer -MinimumVersion 1.25.0`.
+  Each GitHub Actions `run:` block is a fresh shell, so an import performed in
+  the install step would not have applied to the steps that actually lint;
+  doing it in the linting step means an older copy preinstalled on the runner
+  image cannot win on `PSModulePath`, and the job fails loudly if only an
+  older version is available. `RequiredModules.psd1` raises its ScriptAnalyzer
+  floor from `[1.22,2.0)` to `[1.25,2.0)` to match (resolves to 1.25.0).
+
 - Expanded `PSScriptAnalyzerSettings.psd1` from a minimal exclude-only config
   to a comprehensive baseline ruleset covering security, `ShouldProcess`
   enforcement, OTBS formatting, and comment-based help, targeting
   PowerShell 7.4.
 
 ### Fixed
+
+- `Initialize-Template.ps1` set the module GUID with a `(?m)^GUID\s*=` regex
+  that assumed the manifest key started at column 0. Formatting the manifest
+  to the baseline (above) indents and pads that key, which silently broke the
+  substitution, so every initialized module would have kept the template's
+  fixed GUID. The pattern now captures leading whitespace and alignment
+  padding and preserves both.
 
 - Removed the broken project-level `PostToolUse` ScriptAnalyzer hook from
   `.claude/settings.json`. The hook's `pwsh` script was wrapped in double

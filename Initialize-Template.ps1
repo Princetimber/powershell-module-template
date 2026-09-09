@@ -95,6 +95,18 @@
     Make sure to commit any changes to git after initialization.
 #>
 
+# PSAvoidUsingWriteHost is a hard rule for module code in this repo's
+# PSScriptAnalyzerSettings.psd1, and it stays that way. It is suppressed here
+# only, because this file is not module code: it is a one-shot, interactive
+# bootstrapper that prompts with Read-Host, writes coloured status output for a
+# human at a terminal, and deletes itself when it finishes. Nothing consumes,
+# redirects, or tests its output, so the rule's rationale ("invisible to
+# capture, redirection, and tests") does not apply. Write-Information cannot
+# colour output, and Write-Output would emit console chrome into the pipeline.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSAvoidUsingWriteHost', '',
+    Justification = 'Interactive bootstrap script; console output is the interface, not data.'
+)]
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter()]
@@ -140,14 +152,14 @@ param(
 
 function Test-ApprovedVerb {
     param([string]$Name)
-    
+
     if ($Name -notmatch '^[A-Z][a-z]+-[A-Z]') {
         return $false
     }
-    
+
     $verb = $Name -replace '-.*$', ''
     $approvedVerbs = Get-Verb | Select-Object -ExpandProperty Verb
-    
+
     return $verb -in $approvedVerbs
 }
 
@@ -156,14 +168,14 @@ function Write-ColorMessage {
         [string]$Message,
         [string]$Type = 'Info'  # Info, Success, Warning, Error
     )
-    
+
     $symbol = switch ($Type) {
         'Success' { if ($PSStyle) { "$($PSStyle.Foreground.Green)✓$($PSStyle.Reset)" } else { '✓' } }
         'Warning' { if ($PSStyle) { "$($PSStyle.Foreground.Yellow)⚠$($PSStyle.Reset)" } else { '⚠' } }
-        'Error'   { if ($PSStyle) { "$($PSStyle.Foreground.Red)✗$($PSStyle.Reset)" } else { '✗' } }
-        default   { if ($PSStyle) { "$($PSStyle.Foreground.Cyan)ℹ$($PSStyle.Reset)" } else { 'ℹ' } }
+        'Error' { if ($PSStyle) { "$($PSStyle.Foreground.Red)✗$($PSStyle.Reset)" } else { '✗' } }
+        default { if ($PSStyle) { "$($PSStyle.Foreground.Cyan)ℹ$($PSStyle.Reset)" } else { 'ℹ' } }
     }
-    
+
     Write-Host "$symbol $Message"
 }
 
@@ -174,23 +186,23 @@ function Write-ColorMessage {
 try {
     $scriptPath = $PSCommandPath
     $templateRoot = Split-Path -Parent $scriptPath
-    
-    Write-ColorMessage "PowerShell Module Template Initialization" -Type Info
-    Write-Host ""
-    
+
+    Write-ColorMessage 'PowerShell Module Template Initialization' -Type Info
+    Write-Host ''
+
     # Prompt for missing parameters
     if (-not $ModuleName) {
         do {
-            $ModuleName = Read-Host "Module Name (e.g., Invoke-MyModule, Get-MyData)"
-            
+            $ModuleName = Read-Host 'Module Name (e.g., Invoke-MyModule, Get-MyData)'
+
             if (-not $ModuleName) {
-                Write-ColorMessage "Module name is required." -Type Error
+                Write-ColorMessage 'Module name is required.' -Type Error
                 continue
             }
-            
+
             if (-not (Test-ApprovedVerb -Name $ModuleName)) {
-                Write-ColorMessage "Module name must follow PowerShell Verb-Noun naming convention with an approved verb." -Type Error
-                Write-ColorMessage "Examples: Invoke-MyModule, Get-MyData, Set-Configuration" -Type Info
+                Write-ColorMessage 'Module name must follow PowerShell Verb-Noun naming convention with an approved verb.' -Type Error
+                Write-ColorMessage 'Examples: Invoke-MyModule, Get-MyData, Set-Configuration' -Type Info
                 Write-Host "  Approved verbs: $(((Get-Verb).Verb | Select-Object -First 10) -join ', '), ..." -ForegroundColor Gray
                 $ModuleName = $null
             }
@@ -200,57 +212,57 @@ try {
             throw "Module name '$ModuleName' must follow PowerShell Verb-Noun naming convention with an approved verb."
         }
     }
-    
+
     if (-not $Description) {
         do {
-            $Description = Read-Host "Description (what does your module do?)"
+            $Description = Read-Host 'Description (what does your module do?)'
             if (-not $Description) {
-                Write-ColorMessage "Description is required." -Type Error
+                Write-ColorMessage 'Description is required.' -Type Error
             }
         } while (-not $Description)
     }
-    
+
     if (-not $Author) {
         do {
-            $Author = Read-Host "Author Name"
+            $Author = Read-Host 'Author Name'
             if (-not $Author) {
-                Write-ColorMessage "Author name is required." -Type Error
+                Write-ColorMessage 'Author name is required.' -Type Error
             }
         } while (-not $Author)
     }
-    
+
     if (-not $Company) {
         do {
-            $Company = Read-Host "Company/Organization"
+            $Company = Read-Host 'Company/Organization'
             if (-not $Company) {
-                Write-ColorMessage "Company name is required." -Type Error
+                Write-ColorMessage 'Company name is required.' -Type Error
             }
         } while (-not $Company)
     }
-    
+
     if (-not $ModuleGuid) {
         $ModuleGuid = [guid]::NewGuid().ToString()
         Write-ColorMessage "Generated GUID: $ModuleGuid" -Type Info
     }
-    
+
     # Confirm before proceeding
-    Write-Host ""
-    Write-Host "Template will be initialized with:" -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host 'Template will be initialized with:' -ForegroundColor Cyan
     Write-Host "  Module Name : $ModuleName" -ForegroundColor Gray
     Write-Host "  Description : $Description" -ForegroundColor Gray
     Write-Host "  Author      : $Author" -ForegroundColor Gray
     Write-Host "  Company     : $Company" -ForegroundColor Gray
     Write-Host "  GUID        : $ModuleGuid" -ForegroundColor Gray
-    Write-Host ""
-    
+    Write-Host ''
+
     if (-not $WhatIfPreference) {
-        $confirm = Read-Host "Continue? (Y/n)"
+        $confirm = Read-Host 'Continue? (Y/n)'
         if ($confirm -and $confirm -ne 'Y' -and $confirm -ne 'y') {
-            Write-ColorMessage "Initialization cancelled by user." -Type Warning
+            Write-ColorMessage 'Initialization cancelled by user.' -Type Warning
             return
         }
     }
-    
+
     # Define replacement mappings
     $replacements = @{
         '{{MODULE_NAME}}'        = $ModuleName
@@ -259,27 +271,27 @@ try {
         '{{COMPANY}}'            = $Company
         'TemplateModule'         = $ModuleName
     }
-    
+
     # Get all text files (exclude binary files and git folder)
     $textExtensions = @('*.ps1', '*.psm1', '*.psd1', '*.md', '*.txt', '*.yml', '*.yaml', '*.json')
     $filesToUpdate = Get-ChildItem -Path $templateRoot -Recurse -File -Include $textExtensions |
         Where-Object { $_.FullName -notmatch '[\\/](\.git|output)[\\/]' }
-    
-    Write-Host ""
+
+    Write-Host ''
     Write-ColorMessage "Updating $($filesToUpdate.Count) files..." -Type Info
-    
+
     $updatedCount = 0
     foreach ($file in $filesToUpdate) {
-        if ($PSCmdlet.ShouldProcess($file.FullName, "Replace placeholders")) {
+        if ($PSCmdlet.ShouldProcess($file.FullName, 'Replace placeholders')) {
             $content = Get-Content -Path $file.FullName -Raw -ErrorAction Stop
             $originalContent = $content
-            
+
             if ($null -ne $content) {
                 foreach ($key in $replacements.Keys) {
                     $content = $content.Replace($key, $replacements[$key])
                 }
             }
-            
+
             if ($content -ne $originalContent) {
                 Set-Content -Path $file.FullName -Value $content -NoNewline -ErrorAction Stop
                 $updatedCount++
@@ -287,27 +299,30 @@ try {
             }
         }
     }
-    
+
     Write-ColorMessage "Updated $updatedCount files." -Type Success
-    
+
     # Assign a unique GUID to the module manifest. The template ships a fixed GUID so
     # the raw, un-initialized template is a valid buildable module (green CI); replace
     # it here so every initialized module gets its own identity.
     $manifestPath = Join-Path -Path $templateRoot -ChildPath 'source/TemplateModule.psd1'
     if ((Test-Path $manifestPath) -and $PSCmdlet.ShouldProcess($manifestPath, "Set module GUID to $ModuleGuid")) {
         $manifestContent = Get-Content -Path $manifestPath -Raw -ErrorAction Stop
-        $manifestContent = $manifestContent -replace "(?m)^GUID\s*=\s*'[^']*'", ("GUID = '{0}'" -f $ModuleGuid)
+        # Capture the indentation and alignment padding before '=' so the
+        # substitution survives the manifest being formatted to the repo's
+        # PSScriptAnalyzerSettings.psd1 baseline (indented, '=' aligned).
+        $manifestContent = $manifestContent -replace "(?m)^([ \t]*GUID[ \t]*=[ \t]*)'[^']*'", ("`$1'{0}'" -f $ModuleGuid)
         Set-Content -Path $manifestPath -Value $manifestContent -NoNewline -ErrorAction Stop
         Write-Host "  Set module GUID: $ModuleGuid" -ForegroundColor Gray
     }
 
     # Rename TemplateModule files
-    Write-Host ""
+    Write-Host ''
     Write-ColorMessage "Renaming TemplateModule files to $ModuleName..." -Type Info
-    
+
     $filesToRename = Get-ChildItem -Path $templateRoot -Recurse -File |
         Where-Object { $_.Name -like '*TemplateModule*' -and $_.FullName -notmatch '[\\/]\.git[\\/]' }
-    
+
     foreach ($file in $filesToRename) {
         $newName = $file.Name -replace 'TemplateModule', $ModuleName
 
@@ -316,42 +331,41 @@ try {
             Write-Host "  Renamed: $($file.Name) → $newName" -ForegroundColor Gray
         }
     }
-    
+
     Write-ColorMessage "Renamed $($filesToRename.Count) files." -Type Success
 
     # Create secrets.local.ps1 scoped to the chosen publish target
     if ($Publish) {
-        Write-Host ""
+        Write-Host ''
         Write-ColorMessage "Setting up publish credentials for $Publish (secrets.local.ps1)..." -Type Info
 
         $secretsLines = @(
-            "# secrets.local.ps1 — gitignored, never commit this file.",
+            '# secrets.local.ps1 — gitignored, never commit this file.',
             "# Generated by Initialize-Template.ps1 for Publish: $Publish",
-            "#",
-            "# Load credentials into your session before publishing:",
-            "#   . ./secrets.local.ps1",
+            '#',
+            '# Load credentials into your session before publishing:',
+            '#   . ./secrets.local.ps1',
             "#   ./build.ps1 -tasks $(if ($Publish -eq 'PSGallery') { 'publish_psgallery' } else { 'publish_github' })",
-            ""
+            ''
         )
 
         if ($Publish -eq 'PSGallery') {
             if (-not $GalleryApiKey) {
                 do {
-                    $GalleryApiKey = Read-Host "PSGallery API Key (from https://www.powershellgallery.com/account/apikeys)"
+                    $GalleryApiKey = Read-Host 'PSGallery API Key (from https://www.powershellgallery.com/account/apikeys)'
                     if (-not $GalleryApiKey) {
-                        Write-ColorMessage "PSGallery API Key is required for -Publish PSGallery." -Type Error
+                        Write-ColorMessage 'PSGallery API Key is required for -Publish PSGallery.' -Type Error
                     }
                 } while (-not $GalleryApiKey)
             }
             $escapedGalleryApiKey = $GalleryApiKey.Replace("'", "''")
             $secretsLines += "`$env:PSGALLERY_API_KEY = '$escapedGalleryApiKey'"
-        }
-        elseif ($Publish -eq 'GitHub') {
+        } elseif ($Publish -eq 'GitHub') {
             if (-not $GitHubToken) {
                 do {
                     $GitHubToken = Read-Host "GitHub PAT with 'repo' scope (from https://github.com/settings/tokens)"
                     if (-not $GitHubToken) {
-                        Write-ColorMessage "GitHub token is required for -Publish GitHub." -Type Error
+                        Write-ColorMessage 'GitHub token is required for -Publish GitHub.' -Type Error
                     }
                 } while (-not $GitHubToken)
             }
@@ -363,13 +377,13 @@ try {
 
         if ($PSCmdlet.ShouldProcess($secretsDest, "Create secrets.local.ps1 for $Publish")) {
             Set-Content -Path $secretsDest -Value ($secretsLines -join "`n") -NoNewline -ErrorAction Stop
-            Write-ColorMessage "Created secrets.local.ps1 (gitignored — never commit this file)." -Type Success
+            Write-ColorMessage 'Created secrets.local.ps1 (gitignored — never commit this file).' -Type Success
         }
     }
 
     # Remove Format-GreetingMessage example files and all references
-    Write-Host ""
-    Write-ColorMessage "Removing Format-GreetingMessage example files and references..." -Type Info
+    Write-Host ''
+    Write-ColorMessage 'Removing Format-GreetingMessage example files and references...' -Type Info
 
     $exampleFilesToRemove = @(
         (Join-Path -Path $templateRoot -ChildPath 'source/Private/Format-GreetingMessage.ps1'),
@@ -377,7 +391,7 @@ try {
     )
 
     foreach ($filePath in $exampleFilesToRemove) {
-        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, "Remove example file")) {
+        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, 'Remove example file')) {
             Remove-Item -Path $filePath -Force -ErrorAction Stop
             Write-Host "  Removed: $(Split-Path $filePath -Leaf)" -ForegroundColor Gray
         }
@@ -386,7 +400,7 @@ try {
     # Remove Format-GreetingMessage from about help file
     $helpFile = Get-ChildItem -Path (Join-Path -Path $templateRoot -ChildPath 'source/en-US') `
         -Filter 'about_*.help.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, "Remove Format-GreetingMessage reference")) {
+    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, 'Remove Format-GreetingMessage reference')) {
         $content = (Get-Content -Path $helpFile.FullName -Raw -ErrorAction Stop) -replace "`r`n", "`n"
         $content = $content.Replace("`n    Format-GreetingMessage", '')
         Set-Content -Path $helpFile.FullName -Value $content -NoNewline -ErrorAction Stop
@@ -395,31 +409,31 @@ try {
 
     # Remove Format-GreetingMessage entries from README.md directory listing
     $readmePath = Join-Path -Path $templateRoot -ChildPath 'README.md'
-    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, "Remove Format-GreetingMessage references")) {
+    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, 'Remove Format-GreetingMessage references')) {
         $content = (Get-Content -Path $readmePath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
         $content = $content.Replace("`n│       ├── Format-GreetingMessage.ps1    # Example private function", '')
         $content = $content.Replace("`n│           ├── Format-GreetingMessage.tests.ps1", '')
         Set-Content -Path $readmePath -Value $content -NoNewline -ErrorAction Stop
-        Write-Host "  Updated: README.md" -ForegroundColor Gray
+        Write-Host '  Updated: README.md' -ForegroundColor Gray
     }
 
     # Remove Format-GreetingMessage entry from CHANGELOG.md
     $changelogPath = Join-Path -Path $templateRoot -ChildPath 'CHANGELOG.md'
-    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, "Remove Format-GreetingMessage reference")) {
+    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, 'Remove Format-GreetingMessage reference')) {
         $content = (Get-Content -Path $changelogPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
         $content = $content.Replace(
             "`n- Replaced AllowEmptyString with ValidateNotNullOrEmpty and ValidatePattern on`n  Format-GreetingMessage Name parameter.",
             ''
         )
         Set-Content -Path $changelogPath -Value $content -NoNewline -ErrorAction Stop
-        Write-Host "  Updated: CHANGELOG.md" -ForegroundColor Gray
+        Write-Host '  Updated: CHANGELOG.md' -ForegroundColor Gray
     }
 
-    Write-ColorMessage "Format-GreetingMessage cleanup complete." -Type Success
+    Write-ColorMessage 'Format-GreetingMessage cleanup complete.' -Type Success
 
     # Remove Public example files (Get-Greeting, Export-Greeting) and all references
-    Write-Host ""
-    Write-ColorMessage "Removing example Public functions and references..." -Type Info
+    Write-Host ''
+    Write-ColorMessage 'Removing example Public functions and references...' -Type Info
 
     $publicFilesToRemove = @(
         (Join-Path -Path $templateRoot -ChildPath 'source/Public/Get-Greeting.ps1'),
@@ -429,7 +443,7 @@ try {
     )
 
     foreach ($filePath in $publicFilesToRemove) {
-        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, "Remove example file")) {
+        if ((Test-Path $filePath) -and $PSCmdlet.ShouldProcess($filePath, 'Remove example file')) {
             Remove-Item -Path $filePath -Force -ErrorAction Stop
             Write-Host "  Removed: $(Split-Path $filePath -Leaf)" -ForegroundColor Gray
         }
@@ -438,7 +452,7 @@ try {
     # Update about help file - remove example function entries
     $helpFile = Get-ChildItem -Path (Join-Path -Path $templateRoot -ChildPath 'source/en-US') `
         -Filter 'about_*.help.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, "Remove example function entries from help")) {
+    if ($helpFile -and $PSCmdlet.ShouldProcess($helpFile.FullName, 'Remove example function entries from help')) {
         $content = (Get-Content -Path $helpFile.FullName -Raw -ErrorAction Stop) -replace "`r`n", "`n"
 
         $oldCommands = @(
@@ -492,7 +506,7 @@ try {
 
     # Update README.md - remove example function references
     $readmePath = Join-Path -Path $templateRoot -ChildPath 'README.md'
-    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, "Remove example function references from README")) {
+    if ((Test-Path $readmePath) -and $PSCmdlet.ShouldProcess($readmePath, 'Remove example function references from README')) {
         $content = (Get-Content -Path $readmePath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
 
         $oldFollowLine = @(
@@ -533,12 +547,12 @@ try {
         $content = $content.Replace($oldPatterns, "`n")
 
         Set-Content -Path $readmePath -Value $content -NoNewline -ErrorAction Stop
-        Write-Host "  Updated: README.md" -ForegroundColor Gray
+        Write-Host '  Updated: README.md' -ForegroundColor Gray
     }
 
     # Update CHANGELOG.md - remove example function entries
     $changelogPath = Join-Path -Path $templateRoot -ChildPath 'CHANGELOG.md'
-    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, "Remove example function entries from CHANGELOG")) {
+    if ((Test-Path $changelogPath) -and $PSCmdlet.ShouldProcess($changelogPath, 'Remove example function entries from CHANGELOG')) {
         $content = (Get-Content -Path $changelogPath -Raw -ErrorAction Stop) -replace "`r`n", "`n"
 
         $oldExportGreetingEntry = @(
@@ -559,63 +573,62 @@ try {
         $content = $content.Replace($oldGetGreetingEntries, '')
 
         Set-Content -Path $changelogPath -Value $content -NoNewline -ErrorAction Stop
-        Write-Host "  Updated: CHANGELOG.md" -ForegroundColor Gray
+        Write-Host '  Updated: CHANGELOG.md' -ForegroundColor Gray
     }
 
-    Write-ColorMessage "Example Public function cleanup complete." -Type Success
+    Write-ColorMessage 'Example Public function cleanup complete.' -Type Success
 
     # Verify no placeholders remain
-    Write-Host ""
-    Write-ColorMessage "Verifying all placeholders were replaced..." -Type Info
-    
+    Write-Host ''
+    Write-ColorMessage 'Verifying all placeholders were replaced...' -Type Info
+
     $remainingPlaceholders = Get-ChildItem -Path $templateRoot -Recurse -File -Include $textExtensions |
         Where-Object { $_.FullName -notmatch '[\\/](\.git|output)[\\/]' } |
-        Select-String -Pattern '\{\{[A-Z_]+\}\}' -SimpleMatch:$false
-    
+            Select-String -Pattern '\{\{[A-Z_]+\}\}' -SimpleMatch:$false
+
     if ($remainingPlaceholders) {
-        Write-ColorMessage "Warning: Found remaining placeholders in:" -Type Warning
+        Write-ColorMessage 'Warning: Found remaining placeholders in:' -Type Warning
         $remainingPlaceholders | ForEach-Object {
             Write-Host "  $($_.Filename): $($_.Line.Trim())" -ForegroundColor Yellow
         }
     } else {
-        Write-ColorMessage "All placeholders successfully replaced." -Type Success
+        Write-ColorMessage 'All placeholders successfully replaced.' -Type Success
     }
-    
+
     # Final message
-    Write-Host ""
-    Write-ColorMessage "Template initialization complete!" -Type Success
-    Write-Host ""
-    Write-Host "Next steps:" -ForegroundColor Cyan
-    Write-Host "  1. Review the generated files" -ForegroundColor Gray
-    Write-Host "  2. Run: ./build.ps1 -ResolveDependency -tasks build" -ForegroundColor Gray
-    Write-Host "  3. Run: ./build.ps1 -tasks test" -ForegroundColor Gray
-    Write-Host "  4. Start adding your functions to source/Public/" -ForegroundColor Gray
-    Write-Host "  5. Commit your changes to git" -ForegroundColor Gray
+    Write-Host ''
+    Write-ColorMessage 'Template initialization complete!' -Type Success
+    Write-Host ''
+    Write-Host 'Next steps:' -ForegroundColor Cyan
+    Write-Host '  1. Review the generated files' -ForegroundColor Gray
+    Write-Host '  2. Run: ./build.ps1 -ResolveDependency -tasks build' -ForegroundColor Gray
+    Write-Host '  3. Run: ./build.ps1 -tasks test' -ForegroundColor Gray
+    Write-Host '  4. Start adding your functions to source/Public/' -ForegroundColor Gray
+    Write-Host '  5. Commit your changes to git' -ForegroundColor Gray
     if ($Publish) {
         $publishTask = if ($Publish -eq 'PSGallery') { 'publish_psgallery' } else { 'publish_github' }
-        Write-Host ""
+        Write-Host ''
         Write-Host "To publish your module to ${Publish}:" -ForegroundColor Cyan
-        Write-Host "  . ./secrets.local.ps1                      # load credentials" -ForegroundColor Gray
-        Write-Host "  ./build.ps1 -tasks build                   # build the module" -ForegroundColor Gray
+        Write-Host '  . ./secrets.local.ps1                      # load credentials' -ForegroundColor Gray
+        Write-Host '  ./build.ps1 -tasks build                   # build the module' -ForegroundColor Gray
         Write-Host "  ./build.ps1 -tasks $publishTask" -ForegroundColor Gray
-        Write-Host "  NOTE: secrets.local.ps1 is gitignored — do not commit it." -ForegroundColor Yellow
+        Write-Host '  NOTE: secrets.local.ps1 is gitignored — do not commit it.' -ForegroundColor Yellow
     }
-    Write-Host ""
-    
+    Write-Host ''
+
     # Remove this script
     if (-not $WhatIfPreference) {
-        Write-ColorMessage "Removing initialization script..." -Type Info
-        if ($PSCmdlet.ShouldProcess($scriptPath, "Remove initialization script")) {
+        Write-ColorMessage 'Removing initialization script...' -Type Info
+        if ($PSCmdlet.ShouldProcess($scriptPath, 'Remove initialization script')) {
             Remove-Item -Path $scriptPath -Force -ErrorAction Stop
-            Write-ColorMessage "Initialization script removed." -Type Success
+            Write-ColorMessage 'Initialization script removed.' -Type Success
         }
     } else {
-        Write-ColorMessage "WhatIf: Would remove initialization script." -Type Info
+        Write-ColorMessage 'WhatIf: Would remove initialization script.' -Type Info
     }
-    
 } catch {
     Write-ColorMessage "Initialization failed: $($_.Exception.Message)" -Type Error
-    Write-Host ""
+    Write-Host ''
     Write-Host $_.ScriptStackTrace -ForegroundColor Red
     exit 1
 }
