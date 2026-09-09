@@ -172,7 +172,42 @@ Describe 'Quality for module' -Tags 'TestQuality' {
             $invokeScriptAnalyzerParameters['Settings'] = $script:pssaSettingsPath
         }
 
-        $pssaResult = Invoke-ScriptAnalyzer @invokeScriptAnalyzerParameters
+        <#
+            PSScriptAnalyzer 1.25.0 intermittently throws a NullReferenceException
+            from inside Invoke-ScriptAnalyzer. It is an upstream thread-safety bug:
+            it reproduces with the default ruleset and no settings file, and the
+            number of failures varies across identical runs. Retry that specific
+            exception so a random upstream crash cannot fail CI.
+
+            -ErrorAction Stop is required: without it the crash is a non-terminating
+            error, catch never fires, and $pssaResult stays $null -- which would
+            satisfy the assertion below and silently report "no findings".
+            Only NullReferenceException is caught, and it is rethrown after the
+            final attempt, so a genuine analyzer failure still fails the test.
+        #>
+        $pssaResult = $null
+
+        foreach ($pssaAttempt in 1..3)
+        {
+            try
+            {
+                $pssaResult = Invoke-ScriptAnalyzer @invokeScriptAnalyzerParameters -ErrorAction Stop
+                break
+            }
+            catch [System.NullReferenceException]
+            {
+                if ($pssaAttempt -eq 3)
+                {
+                    throw
+                }
+
+                Write-Warning -Message (
+                    'PSScriptAnalyzer threw NullReferenceException on attempt {0} of 3 for {1} (known upstream race); retrying.' -f
+                        $pssaAttempt, $Name
+                )
+            }
+        }
+
         $report = $pssaResult | Format-Table -AutoSize | Out-String -Width 110
         $pssaResult | Should -BeNullOrEmpty -Because `
             "some rule triggered.`r`n`r`n $report"
