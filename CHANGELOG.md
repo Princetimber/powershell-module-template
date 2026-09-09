@@ -5,6 +5,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped the GitHub-maintained actions off the deprecated Node 20 runtime:
+  `actions/checkout` v4 -> v7, `actions/upload-artifact` v4 -> v7, and
+  `actions/download-artifact` v4 -> v8 across `ci.yml`, `release.yml` and
+  `opencode.yml` (the latter's `checkout@v6` was aligned to v7 too). Note that
+  v5 was *not* sufficient for the artifact actions -- `upload-artifact@v5` and
+  `download-artifact@v5` still target Node 20; only v7 and v8 respectively run
+  on Node 24.
+
+  `gittools/actions/gitversion/*` is deliberately left at v3.1.1 despite v4.7.0
+  being available. The v4 action line runs GitVersion 6, which removed the NuGet
+  version variables, and both workflows feed `ModuleVersion` from
+  `steps.gitversion.outputs.nuGetVersionV2`. Bumping it would empty that value
+  and silently mis-version the module -- including in the PSGallery release
+  pipeline. Migrating needs a replacement output variable plus a GitVersion.yml
+  schema migration to v6, which changes the version numbers actually published,
+  so it belongs in its own change with a test release.
+
+  `softprops/action-gh-release@v2` also still targets Node 20, but v2 is its
+  current major, so there is nothing to move to yet.
+
 ### Fixed
 
 - `Initialize-Template.ps1` never replaced the `{{AUTHOR}}` token in `LICENSE`.
