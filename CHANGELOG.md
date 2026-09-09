@@ -5,6 +5,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `Initialize-Template.ps1` never replaced the `{{AUTHOR}}` token in `LICENSE`.
+  The file-selection list matched only extension globs, and `LICENSE` has no
+  extension, so every initialized module shipped a licence reading
+  `Copyright (c) {{AUTHOR}}`. It is now matched by exact name.
+
+- `Initialize-Template.ps1` skipped dot-directories entirely. `Get-ChildItem
+  -Recurse` does not descend into `.github/`, `.vscode/` and friends on
+  macOS/Linux without `-Force`, so any template token in them shipped
+  un-replaced -- this is why `.github/copilot-instructions.md` kept its
+  `{{MODULE_NAME}}`. `-Force` is now passed, and because that also surfaces
+  local state the exclusion list names it explicitly: `.omo/` (agent session
+  data) and `*.local.*` (gitignored developer overrides) are skipped rather
+  than relying on them being hidden.
+
+- Added two repository contract tests covering both gaps. Rather than restating
+  the selection criteria, the first reads `$textExtensions` out of the
+  initializer's own AST and asserts it matches every tracked file that still
+  carries a `{{TOKEN}}`, so a future templated file in an unmatched location
+  fails the suite instead of shipping broken.
+
 ### Changed
 
 - Brought `Initialize-Template.ps1` to zero baseline ScriptAnalyzer findings

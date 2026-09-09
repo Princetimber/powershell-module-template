@@ -273,9 +273,21 @@ try {
     }
 
     # Get all text files (exclude binary files and git folder)
-    $textExtensions = @('*.ps1', '*.psm1', '*.psd1', '*.md', '*.txt', '*.yml', '*.yaml', '*.json')
-    $filesToUpdate = Get-ChildItem -Path $templateRoot -Recurse -File -Include $textExtensions |
-        Where-Object { $_.FullName -notmatch '[\\/](\.git|output)[\\/]' }
+    # 'LICENSE' has no extension but carries {{AUTHOR}}, so it is matched by
+    # exact name alongside the extension globs.
+    $textExtensions = @('*.ps1', '*.psm1', '*.psd1', '*.md', '*.txt', '*.yml', '*.yaml', '*.json', 'LICENSE')
+
+    # -Force is required: without it Get-ChildItem -Recurse silently skips
+    # dot-directories on macOS/Linux, so a token in .github/ or .vscode/ would
+    # ship un-replaced. Because -Force also surfaces local state, the excludes
+    # below name it explicitly rather than relying on it being hidden: .omo/ is
+    # agent session data and *.local.* files are the developer's own gitignored
+    # overrides -- neither is template content.
+    $filesToUpdate = Get-ChildItem -Path $templateRoot -Recurse -File -Force -Include $textExtensions |
+        Where-Object {
+            $_.FullName -notmatch '[\\/](\.git|\.omo|output|graphify-out)[\\/]' -and
+            $_.Name -notlike '*.local.*'
+        }
 
     Write-Host ''
     Write-ColorMessage "Updating $($filesToUpdate.Count) files..." -Type Info
