@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Converted all 46 `Write-Host` calls in `Initialize-Template.ps1` to
+  `Write-Information` and removed the `PSAvoidUsingWriteHost`
+  `SuppressMessageAttribute`. The rule is now enforced with no exception
+  anywhere in the repository, and the file reports zero ScriptAnalyzer findings
+  on its own merits rather than by suppression.
+
+  Two consequences worth knowing. `Write-Information` writes nothing by default,
+  so the script now sets `$InformationPreference = 'Continue'` unless the caller
+  bound `-InformationAction` explicitly -- without that the installer would run
+  completely silently. And `-ForegroundColor` has no equivalent, so the Gray,
+  Cyan, Yellow and Red tints on plain status lines are gone; the `Write-ColorMessage`
+  status symbols keep their colour because those embed `$PSStyle` escapes in the
+  message text, which survive the information stream.
+
 - Bumped the GitHub-maintained actions off the deprecated Node 20 runtime:
   `actions/checkout` v4 -> v7, `actions/upload-artifact` v4 -> v7, and
   `actions/download-artifact` v4 -> v8 across `ci.yml`, `release.yml` and
