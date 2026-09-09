@@ -1,3 +1,8 @@
+---
+name: fix-and-pr
+description: Runs ScriptAnalyzer, fixes all issues, runs Pester tests, commits to a feature branch, creates a PR, merges it, and cleans up the branch.
+---
+
 # Fix and PR Workflow
 
 Runs ScriptAnalyzer, fixes all issues, runs Pester tests, commits to a feature branch, creates a PR, merges it, and cleans up the branch.

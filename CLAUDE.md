@@ -95,17 +95,6 @@ Invoke-ScriptAnalyzer -Path source/ -Recurse
 - QA tests validate: changelog format, ScriptAnalyzer compliance, help documentation quality
 - **85% code coverage threshold** (configured in `build.yaml`)
 
-## CI/CD
-
-- **GitHub Actions** (`.github/workflows/ci.yml` and `release.yml`)
-  - CI: Runs on push to main and PRs
-  - Matrix testing: Linux, Windows, macOS
-  - Release: Publishes to PSGallery and GitHub Releases on tag `v*`
-
-- **Azure Pipelines** (`azure-pipelines.yml`)
-  - Stages: Build → Test (multi-platform: Linux, Windows PS7, macOS) → Code Coverage → Deploy
-  - Deploy publishes to PSGallery and GitHub Releases on `main` branch
-
 ## AI Agent Operating Principles
 
 - Make the smallest safe change that achieves the goal

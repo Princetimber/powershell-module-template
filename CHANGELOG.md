@@ -5,6 +5,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Export-Greeting public function demonstrating correct ShouldProcess usage for
+  state-changing operations (file writes with -WhatIf, -Confirm, -Force, -Append,
+  -PassThru support).
+- Clear-LogFile private function — clears the active log file with optional
+  timestamped archive backup before clearing. ConfirmImpact=High always prompts
+  unless -Force or -Confirm:$false is passed.
+- Get-LogFilePath private function — returns the current module-scoped log file
+  path ($script:LogFile) for inspection or use in external scripts.
+- Get-LogFileSize private function — returns the current log file size in bytes;
+  returns 0 if the log file does not yet exist.
+- Invoke-LogRotation private function — rotates log files by shifting numbered
+  backups up (log.5 removed, log.4 shifted to log.5, continuing through log to
+  log.1). Called inside the
+  Write-ToLog mutex; not intended for direct use.
+- Set-LogFilePath private function — sets the module-scoped log file path with
+  absolute-path validation; -Force creates the destination directory on demand.
+  Also updates $Global:LogFile for backward compatibility.
+- Write-ErrorLog private function — convenience wrapper around Write-ToLog for
+  ErrorRecord objects. Logs the main message at ERROR level; exception type,
+  category, location, and inner exception at DEBUG. -IncludeStackTrace appends
+  the PowerShell script stack trace.
+
 ### Changed
 
 - Converted all 46 `Write-Host` calls in `Initialize-Template.ps1` to
@@ -40,30 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   `softprops/action-gh-release@v2` also still targets Node 20, but v2 is its
   current major, so there is nothing to move to yet.
-
-### Fixed
-
-- `Initialize-Template.ps1` never replaced the `{{AUTHOR}}` token in `LICENSE`.
-  The file-selection list matched only extension globs, and `LICENSE` has no
-  extension, so every initialized module shipped a licence reading
-  `Copyright (c) {{AUTHOR}}`. It is now matched by exact name.
-
-- `Initialize-Template.ps1` skipped dot-directories entirely. `Get-ChildItem
-  -Recurse` does not descend into `.github/`, `.vscode/` and friends on
-  macOS/Linux without `-Force`, so any template token in them shipped
-  un-replaced -- this is why `.github/copilot-instructions.md` kept its
-  `{{MODULE_NAME}}`. `-Force` is now passed, and because that also surfaces
-  local state the exclusion list names it explicitly: `.omo/` (agent session
-  data) and `*.local.*` (gitignored developer overrides) are skipped rather
-  than relying on them being hidden.
-
-- Added two repository contract tests covering both gaps. Rather than restating
-  the selection criteria, the first reads `$textExtensions` out of the
-  initializer's own AST and asserts it matches every tracked file that still
-  carries a `{{TOKEN}}`, so a future templated file in an unmatched location
-  fails the suite instead of shipping broken.
-
-### Changed
 
 - Brought `Initialize-Template.ps1` to zero baseline ScriptAnalyzer findings
   (was 153). 107 were fixed mechanically -- 71
@@ -116,7 +116,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enforcement, OTBS formatting, and comment-based help, targeting
   PowerShell 7.4.
 
+- Updated `.claude/settings.json` PostToolUse hook to pass `-Settings PSScriptAnalyzerSettings.psd1`
+  to `Invoke-ScriptAnalyzer`, ensuring the project-local ruleset is applied on every file edit
+  inside Claude Code.
+- Rebuilt Write-ToLog as a production-grade, thread-safe logging framework:
+  - Named mutex (Global\TemplateModuleLog) prevents concurrent write
+    corruption across threads and runspaces.
+  - Auto-rotates at 10 MB, keeping up to 5 numbered backup files.
+  - Redacts passwords, tokens, keys, and secrets in key=value, JSON, and XML/HTML
+    formats before writing.
+  - ANSI colour console output via PSStyle (7.2+) with escape-code fallback.
+  - Dedicated ErrorRecord parameter set for structured exception logging.
+  - Wrapper functions (Test-PathWrapper, Add-ContentWrapper, Get-ItemWrapper,
+    New-ItemDirectoryWrapper) isolate I/O calls for Pester mockability.
+  - Mutex is disposed on PowerShell exit via Register-EngineEvent.
+- Removed ShouldProcess from Get-Greeting — read-only functions should not use
+  SupportsShouldProcess. Removed Force parameter accordingly.
+- Replaced string-throw error handling in Get-Greeting with proper ErrorRecord
+  construction via ThrowTerminatingError.
+- Replaced AllowEmptyString with ValidateNotNullOrEmpty and ValidatePattern on
+  Format-GreetingMessage Name parameter.
+- Pinned dependency versions in RequiredModules.psd1 using version ranges instead
+  of 'latest'.
+- Consolidated AI agent documentation: removed .github/instructions/ directory
+  (5 files) and tests/tests.instructions.md, trimmed copilot-instructions.md.
+- Updated README, CLAUDE.md, and help text to reflect all changes.
+
+### Removed
+
+- Removed `.github/copilot-instructions.md` along with the references to it in
+  `README.md` (directory tree), `AGENTS.md`, and `CLAUDE.md` -- the latter's
+  `## Further Reference` section went with it, as that was its only entry. This
+  also clears the last stray `{{MODULE_NAME}}` placeholder that survived
+  `Initialize-Template.ps1`, since the token lived in that file.
+
+- Removed `Write-ErrorLog`, `Get-LogFilePath`, `Get-LogFileSize`, `Set-LogFilePath`,
+  and `Clear-LogFile` from `source/Private` along with their dedicated Pester
+  tests. None of these functions were ever called by the module's public or
+  private code — they existed only to be unit-tested, and `Write-ErrorLog`
+  duplicated logic already handled by `Write-ToLog`'s own `ErrorRecord`
+  parameter set. `Write-ToLog` (the module's standard logger) and
+  `Invoke-LogRotation` (invoked from within `Write-ToLog`) are unchanged.
+
+- Windows PowerShell 5.1 test job from azure-pipelines.yml (contradicts PS 7.0
+  requirement in #Requires).
+- .github/instructions/ directory and tests/tests.instructions.md.
+- Classes/ directory reference from documentation (directory did not exist).
+
 ### Fixed
+
+- `Initialize-Template.ps1` never replaced the `{{AUTHOR}}` token in `LICENSE`.
+  The file-selection list matched only extension globs, and `LICENSE` has no
+  extension, so every initialized module shipped a licence reading
+  `Copyright (c) {{AUTHOR}}`. It is now matched by exact name.
+
+- `Initialize-Template.ps1` skipped dot-directories entirely. `Get-ChildItem
+  -Recurse` does not descend into `.github/`, `.vscode/` and friends on
+  macOS/Linux without `-Force`, so any template token in them shipped
+  un-replaced -- this is why `.github/copilot-instructions.md` kept its
+  `{{MODULE_NAME}}`. `-Force` is now passed, and because that also surfaces
+  local state the exclusion list names it explicitly: `.omo/` (agent session
+  data) and `*.local.*` (gitignored developer overrides) are skipped rather
+  than relying on them being hidden.
+
+- Added two repository contract tests covering both gaps. Rather than restating
+  the selection criteria, the first reads `$textExtensions` out of the
+  initializer's own AST and asserts it matches every tracked file that still
+  carries a `{{TOKEN}}`, so a future templated file in an unmatched location
+  fails the suite instead of shipping broken.
 
 - Made the QA `Should pass Script Analyzer for <Name>` test and the CI `lint`
   job resilient to an upstream PSScriptAnalyzer 1.25.0 bug: `Invoke-ScriptAnalyzer`
@@ -157,32 +224,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   creation race, `ErrorRecord` invocation/inner-exception detail) and for
   `Get-Greeting`'s `ThrowTerminatingError` branch, bringing coverage to ~94.5%.
 
-### Removed
-
-- Removed `.github/copilot-instructions.md` along with the references to it in
-  `README.md` (directory tree), `AGENTS.md`, and `CLAUDE.md` -- the latter's
-  `## Further Reference` section went with it, as that was its only entry. This
-  also clears the last stray `{{MODULE_NAME}}` placeholder that survived
-  `Initialize-Template.ps1`, since the token lived in that file.
-
-- Removed `Write-ErrorLog`, `Get-LogFilePath`, `Get-LogFileSize`, `Set-LogFilePath`,
-  and `Clear-LogFile` from `source/Private` along with their dedicated Pester
-  tests. None of these functions were ever called by the module's public or
-  private code — they existed only to be unit-tested, and `Write-ErrorLog`
-  duplicated logic already handled by `Write-ToLog`'s own `ErrorRecord`
-  parameter set. `Write-ToLog` (the module's standard logger) and
-  `Invoke-LogRotation` (invoked from within `Write-ToLog`) are unchanged.
-
-### Security
-
-- Restricted the opencode GitHub Actions workflow to trusted commenters (repo
-  owner, org members, invited collaborators). Previously any user could comment
-  `/oc` on a public issue or PR to run the agent with `ANTHROPIC_API_KEY` and an
-  OIDC token in scope. Also pinned the third-party opencode action to an immutable
-  release commit (v1.18.9) instead of the mutable `@latest` branch.
-
-### Fixed
-
 - Enabled PSResourceGet so the NuGet version ranges in RequiredModules.psd1 resolve
   on a clean machine (the legacy PowerShellGet path could not parse them), and
   declared the transitive build dependencies (Configuration, Metadata, Plaster,
@@ -205,61 +246,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended Write-ToLog secret redaction to also cover Bearer tokens and unquoted
   `key: value` pairs (in addition to the existing key=value, JSON, and XML forms).
 
-### Added
+### Security
 
-- Export-Greeting public function demonstrating correct ShouldProcess usage for
-  state-changing operations (file writes with -WhatIf, -Confirm, -Force, -Append,
-  -PassThru support).
-- Clear-LogFile private function — clears the active log file with optional
-  timestamped archive backup before clearing. ConfirmImpact=High always prompts
-  unless -Force or -Confirm:$false is passed.
-- Get-LogFilePath private function — returns the current module-scoped log file
-  path ($script:LogFile) for inspection or use in external scripts.
-- Get-LogFileSize private function — returns the current log file size in bytes;
-  returns 0 if the log file does not yet exist.
-- Invoke-LogRotation private function — rotates log files by shifting numbered
-  backups up (log.5 removed, log.4 shifted to log.5, continuing through log to
-  log.1). Called inside the
-  Write-ToLog mutex; not intended for direct use.
-- Set-LogFilePath private function — sets the module-scoped log file path with
-  absolute-path validation; -Force creates the destination directory on demand.
-  Also updates $Global:LogFile for backward compatibility.
-- Write-ErrorLog private function — convenience wrapper around Write-ToLog for
-  ErrorRecord objects. Logs the main message at ERROR level; exception type,
-  category, location, and inner exception at DEBUG. -IncludeStackTrace appends
-  the PowerShell script stack trace.
-
-### Changed
-
-- Updated `.claude/settings.json` PostToolUse hook to pass `-Settings PSScriptAnalyzerSettings.psd1`
-  to `Invoke-ScriptAnalyzer`, ensuring the project-local ruleset is applied on every file edit
-  inside Claude Code.
-- Rebuilt Write-ToLog as a production-grade, thread-safe logging framework:
-  - Named mutex (Global\TemplateModuleLog) prevents concurrent write
-    corruption across threads and runspaces.
-  - Auto-rotates at 10 MB, keeping up to 5 numbered backup files.
-  - Redacts passwords, tokens, keys, and secrets in key=value, JSON, and XML/HTML
-    formats before writing.
-  - ANSI colour console output via PSStyle (7.2+) with escape-code fallback.
-  - Dedicated ErrorRecord parameter set for structured exception logging.
-  - Wrapper functions (Test-PathWrapper, Add-ContentWrapper, Get-ItemWrapper,
-    New-ItemDirectoryWrapper) isolate I/O calls for Pester mockability.
-  - Mutex is disposed on PowerShell exit via Register-EngineEvent.
-- Removed ShouldProcess from Get-Greeting — read-only functions should not use
-  SupportsShouldProcess. Removed Force parameter accordingly.
-- Replaced string-throw error handling in Get-Greeting with proper ErrorRecord
-  construction via ThrowTerminatingError.
-- Replaced AllowEmptyString with ValidateNotNullOrEmpty and ValidatePattern on
-  Format-GreetingMessage Name parameter.
-- Pinned dependency versions in RequiredModules.psd1 using version ranges instead
-  of 'latest'.
-- Consolidated AI agent documentation: removed .github/instructions/ directory
-  (5 files) and tests/tests.instructions.md, trimmed copilot-instructions.md.
-- Updated README, CLAUDE.md, and help text to reflect all changes.
-
-### Removed
-
-- Windows PowerShell 5.1 test job from azure-pipelines.yml (contradicts PS 7.0
-  requirement in #Requires).
-- .github/instructions/ directory and tests/tests.instructions.md.
-- Classes/ directory reference from documentation (directory did not exist).
+- Restricted the opencode GitHub Actions workflow to trusted commenters (repo
+  owner, org members, invited collaborators). Previously any user could comment
+  `/oc` on a public issue or PR to run the agent with `ANTHROPIC_API_KEY` and an
+  OIDC token in scope. Also pinned the third-party opencode action to an immutable
+  release commit (v1.18.9) instead of the mutable `@latest` branch.
