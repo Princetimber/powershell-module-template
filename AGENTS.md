@@ -127,17 +127,9 @@ Describe 'FunctionName' -Tag 'Unit' {
 
 ## Dependencies
 
-Defined in `RequiredModules.psd1` (pinned version ranges):
-
-| Module               | Version Range  |
-|----------------------|--------------- |
-| InvokeBuild          | `[5.0, 6.0)`   |
-| PSScriptAnalyzer     | `[1.22, 2.0)`  |
-| Pester               | `[5.6, 6.0)`   |
-| ModuleBuilder        | `[3.0, 4.0)`   |
-| ChangelogManagement  | `[3.0, 4.0)`   |
-| Sampler              | `[0.118, 1.0)` |
-| Sampler.GitHubTasks  | `[0.6, 1.0)`   |
+Pinned version ranges are defined in `RequiredModules.psd1` — read that file for the current
+versions rather than assuming ranges from memory or an older copy of this doc; it changes
+independently of this file and is the source of truth.
 
 ## CI/CD
 
