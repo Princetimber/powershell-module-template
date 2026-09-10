@@ -25,23 +25,17 @@ PowerShellEditorServices.json
 # graphify skill output
 graphify-out/
 
-# Ruflo local secrets and runtime data
+# Local secrets
 .env
 .env.local
 .env.*.local
-.claude-flow/data/
-.claude-flow/logs/
-.claude-flow/sessions/
-# machine-specific absolute path to the npx-cached @claude-flow/memory install;
-# also the source path for auto-memory-hook.mjs's dynamic import — don't let a
-# committed/tampered copy of this control what gets imported on session start
-.claude-flow/memory-package.json
-# Ruflo runtime state — regenerated locally, not portable/meaningful across clones
-.claude-flow/daemon.pid
-.claude-flow/daemon-state.json
-.claude-flow/metrics/
-.claude-flow/security/
-.claude-flow/policy/
-.claude-flow/daemon-queue/
+
+# Local AI-agent tooling (Claude Code / Ruflo / claude-flow) — never ship this
+# scaffolding into modules created from this template. It carries auto-executing
+# hooks and has had real path-traversal/dynamic-import bugs in this repo's history
+# (see commits 70fe9a3, 30f70a3) — keep it local and untracked, not committed.
+.claude/
+.claude-flow/
+.agents/
 .swarm/
 ruvector.db
