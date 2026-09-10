@@ -42,5 +42,6 @@ graphify-out/
 .claude-flow/metrics/
 .claude-flow/security/
 .claude-flow/policy/
+.claude-flow/daemon-queue/
 .swarm/
 ruvector.db
