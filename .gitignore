@@ -36,3 +36,11 @@ graphify-out/
 # also the source path for auto-memory-hook.mjs's dynamic import — don't let a
 # committed/tampered copy of this control what gets imported on session start
 .claude-flow/memory-package.json
+# Ruflo runtime state — regenerated locally, not portable/meaningful across clones
+.claude-flow/daemon.pid
+.claude-flow/daemon-state.json
+.claude-flow/metrics/
+.claude-flow/security/
+.claude-flow/policy/
+.swarm/
+ruvector.db
