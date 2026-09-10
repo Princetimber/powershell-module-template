@@ -5,6 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Stopped tracking `.claude/`, `.claude-flow/`, and `.agents/` in git and added
+  them to `.gitignore`. These directories held Claude Code / Ruflo / claude-flow
+  agent tooling — including hooks that auto-execute Node scripts on nearly every
+  tool event — that was being committed and copied into every module scaffolded
+  from this template. That tooling's own hook code has had two prior
+  path-traversal/unsafe-dynamic-import fixes in this repo's history. Root
+  `CLAUDE.md` was also rewritten to drop the Ruflo capability-brain/swarm/memory
+  sections, keeping only the generic rules relevant to this repository.
+
 ### Added
 
 - Export-Greeting public function demonstrating correct ShouldProcess usage for

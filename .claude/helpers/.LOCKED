@@ -1,7 +1,0 @@
-Hand-patched security fixes applied to auto-memory-hook.mjs and
-hook-handler.cjs (commits 30f70a3, 70fe9a3, 9ee348b) — both are in Ruflo's
-CRITICAL_HELPERS auto-refresh list and were silently reverted by
-`ruflo daemon`/CLI's version-stamped helper refresh. This marker (see
-@claude-flow/cli's dist/src/init/helper-refresh.js) opts this project out
-of that auto-refresh. Delete only if you intend to accept upstream's
-version of these files over the local security patches.
