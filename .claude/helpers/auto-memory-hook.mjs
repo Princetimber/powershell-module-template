@@ -11,8 +11,8 @@
  *   node auto-memory-hook.mjs status   # Show bridge status
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, realpathSync } from 'fs';
+import { join, dirname, sep } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -164,6 +164,24 @@ class JsonFileBackend {
 // Resolve memory package path (local dev or npm installed)
 // ============================================================================
 
+// Guards the sidecar-recorded distPath before it's ever passed to import():
+// it must physically resolve (post-symlink) inside a real
+// `.../node_modules/@claude-flow/memory/dist/` tree, and must be an index.js
+// or index.mjs entry point — never anywhere else, so a tampered or
+// carelessly-committed sidecar can't redirect session-start to arbitrary code.
+function isTrustedMemoryDistPath(candidatePath) {
+  try {
+    if (!existsSync(candidatePath)) return false;
+    const real = realpathSync(candidatePath);
+    const marker = `${sep}node_modules${sep}@claude-flow${sep}memory${sep}dist${sep}`;
+    if (!real.includes(marker)) return false;
+    const base = real.slice(real.lastIndexOf(sep) + 1);
+    return base === 'index.js' || base === 'index.mjs';
+  } catch {
+    return false;
+  }
+}
+
 async function loadMemoryPackage() {
   // Strategy 0 (#2545): sidecar recorded by `init` / `doctor --fix`. On the
   // documented `npx ruflo` path @claude-flow/memory (an optionalDependency of
@@ -174,8 +192,8 @@ async function loadMemoryPackage() {
     const sidecar = join(PROJECT_ROOT, '.claude-flow', 'memory-package.json');
     if (existsSync(sidecar)) {
       const rec = JSON.parse(readFileSync(sidecar, 'utf-8'));
-      if (rec?.distPath && existsSync(rec.distPath)) {
-        return await import(`file://${rec.distPath}`);
+      if (rec?.distPath && isTrustedMemoryDistPath(rec.distPath)) {
+        return await import(`file://${realpathSync(rec.distPath)}`);
       }
     }
   } catch { /* fall through */ }
