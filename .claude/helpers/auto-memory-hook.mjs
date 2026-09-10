@@ -14,6 +14,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, realpathSync } from 'fs';
 import { join, dirname, sep } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -164,21 +165,46 @@ class JsonFileBackend {
 // Resolve memory package path (local dev or npm installed)
 // ============================================================================
 
+// Roots the sidecar-recorded distPath is allowed to live under — an explicit
+// allowlist rather than a substring match, so a path like
+// /tmp/whatever/node_modules/@claude-flow/memory/dist/index.js (a real
+// node_modules layout, just not one anyone installed) can't slip through.
+// Each entry is resolved (post-symlink) once and cached; entries that don't
+// exist on this machine (e.g. no global npm prefix) are silently skipped.
+function trustedMemoryRoots() {
+  const candidates = [
+    join(PROJECT_ROOT, 'node_modules'),
+    join(homedir(), '.npm', '_npx'), // npx package cache (the `init` sidecar path)
+  ];
+  const roots = [];
+  for (const c of candidates) {
+    try {
+      if (existsSync(c)) roots.push(realpathSync(c));
+    } catch { /* skip */ }
+  }
+  return roots;
+}
+
 // Guards the sidecar-recorded distPath before it's ever passed to import():
-// it must physically resolve (post-symlink) inside a real
-// `.../node_modules/@claude-flow/memory/dist/` tree, and must be an index.js
-// or index.mjs entry point — never anywhere else, so a tampered or
-// carelessly-committed sidecar can't redirect session-start to arbitrary code.
-function isTrustedMemoryDistPath(candidatePath) {
+// it must resolve (post-symlink) under one of trustedMemoryRoots(), inside a
+// `node_modules/@claude-flow/memory/dist/` tree, and must be an index.js or
+// index.mjs entry point — never anywhere else, so a tampered or
+// carelessly-committed sidecar can't redirect session-start to arbitrary
+// code. Returns the resolved real path (or null) so callers import() the
+// exact same path that was validated — no second realpathSync, no TOCTOU gap.
+function resolveTrustedMemoryDistPath(candidatePath) {
   try {
-    if (!existsSync(candidatePath)) return false;
+    if (!existsSync(candidatePath)) return null;
     const real = realpathSync(candidatePath);
+    const roots = trustedMemoryRoots();
+    if (!roots.some((root) => real === root || real.startsWith(root + sep))) return null;
     const marker = `${sep}node_modules${sep}@claude-flow${sep}memory${sep}dist${sep}`;
-    if (!real.includes(marker)) return false;
+    if (!real.includes(marker)) return null;
     const base = real.slice(real.lastIndexOf(sep) + 1);
-    return base === 'index.js' || base === 'index.mjs';
+    if (base !== 'index.js' && base !== 'index.mjs') return null;
+    return real;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -192,8 +218,9 @@ async function loadMemoryPackage() {
     const sidecar = join(PROJECT_ROOT, '.claude-flow', 'memory-package.json');
     if (existsSync(sidecar)) {
       const rec = JSON.parse(readFileSync(sidecar, 'utf-8'));
-      if (rec?.distPath && isTrustedMemoryDistPath(rec.distPath)) {
-        return await import(`file://${realpathSync(rec.distPath)}`);
+      const trustedPath = rec?.distPath ? resolveTrustedMemoryDistPath(rec.distPath) : null;
+      if (trustedPath) {
+        return await import(`file://${trustedPath}`);
       }
     }
   } catch { /* fall through */ }
