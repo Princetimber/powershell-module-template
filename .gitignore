@@ -24,3 +24,15 @@ PowerShellEditorServices.json
 
 # graphify skill output
 graphify-out/
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/
+# machine-specific absolute path to the npx-cached @claude-flow/memory install;
+# also the source path for auto-memory-hook.mjs's dynamic import — don't let a
+# committed/tampered copy of this control what gets imported on session start
+.claude-flow/memory-package.json
