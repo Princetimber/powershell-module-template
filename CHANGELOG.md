@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `source/TemplateModule.psm1` was missing `#Requires -Version 7.0` as its
+  first line, required by house style for every `.ps1`/`.psm1` with a minimum
+  PowerShell version dependency.
+- `source/Private/Format-GreetingMessage.ps1` carried full comment-based help,
+  which house style prohibits on private functions (they are never exported
+  and `Get-Help` never surfaces them). Replaced with a one-line comment.
+
 ### Security
 
 - Stopped tracking `.claude/`, `.claude-flow/`, and `.agents/` in git and added
