@@ -1,4 +1,6 @@
-﻿<#
+﻿#Requires -Version 7.0
+
+<#
     Development-time module loader. During development, this file dot-sources all
     .ps1 files from Private/ and Public/ so you can import the module directly.
 
